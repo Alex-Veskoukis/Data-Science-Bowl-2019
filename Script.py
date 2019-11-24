@@ -37,9 +37,8 @@ test = pd.read_csv('test.csv')
 # =============================================================================
 
 
-def Manipulate_Baselile_Data(train, train_labels):
-    train_Assessments = train.loc[train.type=='Assessment']
-    Assessments = pd.merge(train_Assessments, train_labels, how='left', on=['installation_id', 'title', 'game_session'])
+def Manipulate_Baselile_Data(train):
+    Assessments = train[train.type=='Assessment'].copy()
     Assessments['Attempt'] = 0
     AssessementTitles = Assessments['title'].unique()
     AssessementTitles1 = [item for item in AssessementTitles if item not in ['Bird Measurer (Assessment)']]
@@ -70,22 +69,22 @@ def Manipulate_Baselile_Data(train, train_labels):
     Model_Base.loc[Model_Base.time.between('00:00', '05:00', inclusive = True) ,"PartOfDay"] = 'Night'
     Model_Base['title'] = Model_Base['title'].str.rstrip(' (Assessment)')
     Model_Base = Model_Base.set_index(['installation_id','game_session'])
-    Model_Base= Model_Base[['accuracy','title','PartOfDay','stdGameTime','MaxGameTime','MeanGameTime','stdGameEventCount','MaxGameEventCount','MeanGameEventCount']]
+    Model_Base= Model_Base[['title','PartOfDay','stdGameTime','MaxGameTime','MeanGameTime','stdGameEventCount','MaxGameEventCount','MeanGameEventCount']]
     Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['PartOfDay'])] ,axis=1)
     del Model_Base['PartOfDay']
-    Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['title'])] ,axis=1)
-    del Model_Base['title']
     return Model_Base.drop_duplicates()
 
 
-ModelBase = Manipulate_Baselile_Data(train, train_labels)
-ModelBase.to_csv('ModelBase.csv')
+
+ModelBase = Manipulate_Baselile_Data(train)
+
+# Attach ground truth on train
+train_labels['title'] = train_labels['title'].str.rstrip(' (Assessment)')
+Accuracy = train_labels[['installation_id', 'title', 'game_session','accuracy']]
+ModelBaseWithAccuracy = pd.merge(Accuracy, ModelBase,  how='right', on=['installation_id', 'title', 'game_session'])
+ModelBaseWithAccuracy = pd.concat([ModelBaseWithAccuracy, pd.get_dummies(ModelBaseWithAccuracy['title'])] ,axis=1)
+del ModelBaseWithAccuracy['title']
+ModelBaseWithAccuracy.to_csv('ModelBaseWithAccuracy.csv')
 
 
-
-train_Assessments = train.loc[train.type=='Assessment']
-train_Assessments.groupby('installation_id')['game_session'].count()
-
-test_Assessments = test.loc[test.type=='Assessment']
-test_Assessments.groupby('installation_id')['game_session'].count()
 
