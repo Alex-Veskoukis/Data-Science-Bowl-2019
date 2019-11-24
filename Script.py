@@ -37,7 +37,7 @@ test = pd.read_csv('test.csv')
 # =============================================================================
 
 
-def Manipulate_Baselile_Data(train):
+def Manipulate_Baseline_Data(train):
     Assessments = train[train.type=='Assessment'].copy()
     Assessments['Attempt'] = 0
     AssessementTitles = Assessments['title'].unique()
@@ -75,7 +75,7 @@ def Manipulate_Baselile_Data(train):
 
 
 
-ModelBase = Manipulate_Baselile_Data(train)
+ModelBase = Manipulate_Baseline_Data(train)
 
 # Attach ground truth on train
 train_labels['title'] = train_labels['title'].str.rstrip(' (Assessment)')
@@ -86,5 +86,5 @@ del ModelBaseWithAccuracy['title']
 ModelBaseWithAccuracy.to_csv('ModelBaseWithAccuracy.csv')
 
 
-ModelBaseTest = Manipulate_Baselile_Data(test)
+ModelBaseTest = Manipulate_Baseline_Data(test)
 
