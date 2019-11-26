@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Nov 24 00:15:41 2019
-@author: Alex
-"""
-
-# -*- coding: utf-8 -*-
-"""
 Created on Fri Nov 22 10:20:53 2019
 @author: uocvc
 """
@@ -41,8 +35,8 @@ test = pd.read_csv('test.csv')
 # =============================================================================
 
 
-def Manipulate_Baseline_Data(train):
-    Assessments = train[train.type=='Assessment'].copy()
+def Manipulate_Baseline_Data(data):
+    Assessments = data[data.type=='Assessment'].copy()
     Assessments['Attempt'] = 0
     AssessementTitles = Assessments['title'].unique()
     AssessementTitles1 = [item for item in AssessementTitles if item not in ['Bird Measurer (Assessment)']]
@@ -113,8 +107,8 @@ choices = [3, 2, 1,0]
 # =============================================================================
 ModelBase_Test['accuracy_group'] = np.select(conditions, choices, default='black')
 ModelBase_Test = pd.concat([ModelBase_Test, pd.get_dummies(ModelBase_Test['title'])] ,axis=1)
-ModelBase_Test = ModelBase_Test.drop(['title'])
-
+ModelBase_Test = ModelBase_Test.drop(['title'], axis =1)
+ModelBase_Test = ModelBase_Test[ModelBase_Test.PastGames == ModelBase_Test.groupby('installation_id')['PastGames'].transform(max)]
 # =============================================================================
 # def regression_results(y_true, y_pred):
 #     # Regression metrics
@@ -147,7 +141,7 @@ Regressor.fit(X_train,Y_train)
 
 
 Prediction_train = Regressor.predict(X_train)
-Prediction_test1 = Regressor.predict(X_test).round()
+Prediction_test1 = Regressor.predict(X_test)
 
 
 def confusion_matrix(rater_a, rater_b, min_rating=None, max_rating=None):
@@ -240,4 +234,4 @@ poisson_training_results = sm.GLM(Y_train, X_train, family=sm.families.Poisson()
 print(poisson_training_results.summary())
 
 Prediction_test2 = poisson_training_results.get_prediction(X_test)
-quadratic_weighted_kappa(Y_test, Prediction_test.summary_frame()['mean'].round())
+quadratic_weighted_kappa(Y_test, Prediction_test2.summary_frame()['mean'].round())
