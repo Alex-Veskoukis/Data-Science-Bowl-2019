@@ -92,7 +92,7 @@ train_labels['title'] = train_labels['title'].str.rstrip(' (Assessment)')
 Accuracy = train_labels[['installation_id', 'title', 'game_session','accuracy_group']]
 ModelBase_train = pd.merge(Accuracy, ModelBase,  how='right', on=['installation_id', 'title', 'game_session'])
 ModelBase_train = pd.concat([ModelBase_train, pd.get_dummies(ModelBase_train['title'])] ,axis=1)
-del ModelBase_train['title']
+ModelBase_train=ModelBase_train.drop(['title'], axis = 1)
 
 ModelBase_train = ModelBase_train.set_index(['installation_id','game_session'])
 #ModelBaseWithAccuracy.to_csv('ModelBaseWithAccuracy.csv')
@@ -105,9 +105,15 @@ conditions = [
      (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  < 0.5 ) & (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  > 0 ),
       (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  == 0)]
 choices = [3, 2, 1,0]
+# =============================================================================
+# ModelBase_Test['accuracy_group'] = [3 if   (v == 1)
+#                                       else 2 if v  == 0.5
+#                                       else 1 if  (v < 0.5 ) & (v  > 0 )
+#                                       else 0  for v in ModelBase_Test['Success'] / ModelBase_Test['Attempts'] ]
+# =============================================================================
 ModelBase_Test['accuracy_group'] = np.select(conditions, choices, default='black')
 ModelBase_Test = pd.concat([ModelBase_Test, pd.get_dummies(ModelBase_Test['title'])] ,axis=1)
-del ModelBase_Test['title']
+ModelBase_Test = ModelBase_Test.drop(['title'])
 
 # =============================================================================
 # def regression_results(y_true, y_pred):
