@@ -49,4 +49,10 @@ args - JSON formatted string of event arguments. Each argument contains:
         type - Type of the argument (string, int, number, object, array).   
         info - Description of the argument.      
 
+#Submission File
+For each installation_id represented in the test set, you must predict the accuracy_group of the last assessment for that installation_id. The files must have a header and should look like the following:
 
+installation_id,accuracy_group
+00abaee7,3
+01242218,0
+etc.
