@@ -223,7 +223,11 @@ def quadratic_weighted_kappa(rater_a, rater_b, min_rating=None, max_rating=None)
     
     return 1.0 - numerator / denominator
 
-
+   
+    
+    
+    
+    
 
 
 quadratic_weighted_kappa(Y_test, Prediction_test1)
