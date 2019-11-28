@@ -105,6 +105,7 @@ choices = [3, 2, 1,0]
 #                                       else 1 if  (v < 0.5 ) & (v  > 0 )
 #                                       else 0  for v in ModelBase_Test['Success'] / ModelBase_Test['Attempts'] ]
 # =============================================================================
+
 ModelBase_Test['accuracy_group'] = np.select(conditions, choices, default='black')
 ModelBase_Test = pd.concat([ModelBase_Test, pd.get_dummies(ModelBase_Test['title'])] ,axis=1)
 ModelBase_Test = ModelBase_Test.drop(['title'], axis =1)
