@@ -26,6 +26,13 @@ data_specs = pd.read_csv('C:\\Kaggle\\specs.csv')
 data_test.head()
 data_train.head()
 
-# shapes and types
+# shapes and types # just an exmaple function
 compare_shapes(data_test, data_train)
+
+# split json columns
+#data_train = pd.concat([data_train, data_train['event_data'].apply(json_to_series)], axis=1)
+#data_test = pd.concat([data_test, data_test['event_data'].apply(json_to_series)], axis=1)
+
+
+
 
