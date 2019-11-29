@@ -12,7 +12,6 @@ Created on Fri Nov 22 10:20:53 2019
 # =============================================================================
 import pandas as pd
 import numpy as np
-#from sklearn.linear_model import LinearRegression
 from sklearn import linear_model
 import statsmodels.api as sm
 
@@ -23,10 +22,10 @@ pd.set_option('display.width', 1000)
 
 
 
-train = pd.read_csv('train.csv')
-train_labels = pd.read_csv('train_labels.csv')
-specs = pd.read_csv('specs.csv')
-test = pd.read_csv('test.csv')
+train = pd.read_csv('Data/train.csv')
+train_labels = pd.read_csv('Data/train_labels.csv')
+specs = pd.read_csv('Data/specs.csv')
+test = pd.read_csv('Data/test.csv')
 
 
 # =============================================================================
@@ -45,19 +44,13 @@ def Manipulate_Baseline_Data(data):
     Assessments.loc[Assessments['event_data'].str.contains('false') & Assessments['Attempt'] == 1 ,'IsAttemptSuccessful'] = 0
     Assessments.loc[Assessments['event_data'].str.contains('true') & Assessments['Attempt'] == 1 ,'IsAttemptSuccessful'] = 1
     Assessments['timestamp'] = pd.to_datetime(Assessments['timestamp'] , format="%Y-%m-%d %H:%M")
-    
-    #Assessments['MeanEventTime'] = Assessments.groupby(['installation_id','event_id','game_session'])['game_time'].transform(np.mean)
-    #Assessments['MaxEventTime'] = Assessments.groupby(['installation_id','event_id','game_session'])['game_time'].transform(np.max)
-    Assessments['GameSessionTime'] = Assessments.groupby(['installation_id','game_session'])['game_time'].transform(np.max)
-    Assessments['GameEventsCount'] = Assessments.groupby(['installation_id','game_session'])['event_count'].transform(np.max)
+    Assessments['GameAssessmentSessionTime'] = Assessments.groupby(['installation_id','game_session'])['game_time'].transform(np.max)
+    Assessments['GameAssessmentEventsCount'] = Assessments.groupby(['installation_id','game_session'])['event_count'].transform(np.max)
     Assessments = Assessments.sort_values('timestamp', ascending = True)
     Assessments= Assessments[Assessments.Attempt == 1]
     Model_Base = Assessments.drop_duplicates()
-    Model_Base['PastGames'] =     Model_Base.groupby('installation_id')['game_session'].transform(lambda x: pd.factorize(x)[0])
+    Model_Base['PastAssessmentGames'] =     Model_Base.groupby('installation_id')['game_session'].transform(lambda x: pd.factorize(x)[0])
     Model_Base = Model_Base.sort_values(['installation_id','timestamp'], ascending = [True,True])
-#    (Model_Base.groupby('installation_id')['game_session'].transform('cumcount')) + 1
-    #Model_Base.groupby('installation_id')['game_session'].cumcount()+1
-    #(Model_Base.groupby('installation_id')['game_session'].transform('cumcount')) + 1
     Model_Base['Attempts'] = Model_Base.groupby(['installation_id','game_session'])['Attempt'].transform(np.sum)
     Model_Base['Success']=Model_Base.groupby(['installation_id','game_session'])['IsAttemptSuccessful'].transform(np.sum)
     Model_Base['time'] = Model_Base['timestamp'].dt.strftime('%H:%M')
@@ -70,7 +63,8 @@ def Manipulate_Baseline_Data(data):
     Model_Base.loc[Model_Base.time.between('00:00', '05:00', inclusive = True) ,"PartOfDay"] = 'Night'
     Model_Base['title'] = Model_Base['title'].str.rstrip(' (Assessment)')
     Model_Base = Model_Base.set_index(['installation_id','game_session'])
-    Model_Base= Model_Base[['Attempts','Success','title','PartOfDay','world','GameSessionTime','GameEventsCount','PastGames']]
+    Model_Base= Model_Base[['Attempts','Success','title','PartOfDay','world','GameAssessmentSessionTime',
+                            'GameAssessmentEventsCount','PastAssessmentGames']]
     Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['PartOfDay'])] ,axis=1)
     del Model_Base['PartOfDay']
     Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['world'])] ,axis=1)
