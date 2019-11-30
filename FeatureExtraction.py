@@ -100,3 +100,6 @@ type_slice2_assessments.loc[:,'Activity_Time_Exp'] = type_slice2_assessments['Pa
 type_slice2_assessments = type_slice2_assessments.loc[:,
                           ['installation_id', 'game_session',  'Game_Time_Exp',
                            'Assessment_Time_Exp', 'Activity_Time_Exp']].drop_duplicates()
+
+
+MergedSlices = pd.merge(type_slice_assessments, type_slice2_assessments , on = ['installation_id', 'game_session'], how='inner')
