@@ -43,7 +43,6 @@ slice1 = train.loc[(train.game_time == train.Total_Game_Session_Time) &
 slice1['Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
 slice1['Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
 
-
 # Slice 1 / Type frequency Experience Measures
 
 type_slice = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Order']],
@@ -76,7 +75,7 @@ type_slice_assessments = type_slice_assessments.loc[:,
 
 # Slice 1 / Type time spent Experience Measures
 
-type_slice2 = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Order','Total_Game_Session_Time']],
+type_slice2 = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Order', 'Total_Game_Session_Time']],
                              index=['installation_id', 'game_session', 'Order'],
                              columns='type',
                              values='Total_Game_Session_Time',
@@ -88,20 +87,16 @@ type_slice2['Past_Games'] = type_slice2.groupby('installation_id')['Game'].trans
 type_slice2['Past_Clips'] = type_slice2.groupby('installation_id')['Clip'].transform(np.cumsum)
 type_slice2['Past_Assessments'] = type_slice2.groupby('installation_id')['Assessment'].transform(np.cumsum)
 
-type_slice2_assessments = type_slice2[type_slice2.Assessment == 1]
+type_slice2_assessments = type_slice2[type_slice2.Assessment != 0]
 
-type_slice2_assessments = type_slice2_assessments.rename(columns={'Order': 'Past_Game_Sessions'})
-type_slice2_assessments = type_slice2_assessments.drop(['Game', 'Clip', 'Assessment', 'Activity'], axis=1)
-
-type_slice2_assessments['Clip_Experience'] = type_slice2_assessments['Past_Clips'] / \
-                                            type_slice2_assessments['Past_Game_Sessions']
-type_slice2_assessments['Game_Experience'] = type_slice2_assessments['Past_Games'] / \
-                                            type_slice2_assessments['Past_Game_Sessions']
-type_slice2_assessments['Assessment_Experience'] = type_slice2_assessments['Past_Assessments'] / \
-                                                  type_slice2_assessments['Past_Game_Sessions']
-type_slice2_assessments['Activity_Experience'] = type_slice2_assessments['Past_Activities'] / \
-                                                type_slice2_assessments['Past_Game_Sessions']
+type_slice2_assessments.loc[:, 'Past_Assessments'] = type_slice2_assessments.groupby('installation_id')[
+    'Past_Assessments'].transform(lambda x: x.shift(1, fill_value=0))
+TotalPastTime = type_slice2_assessments.Past_Activities + type_slice2_assessments.Past_Games + type_slice2_assessments.Past_Clips + type_slice2.Past_Assessments
+type_slice2_assessments.loc[:,'Clip_Time_Exp'] = type_slice2_assessments['Past_Clips'] / TotalPastTime
+type_slice2_assessments.loc[:,'Game_Time_Exp'] = type_slice2_assessments['Past_Games'] / TotalPastTime
+type_slice2_assessments.loc[:,'Assessment_Time_Exp'] = type_slice2_assessments['Past_Assessments'] / TotalPastTime
+type_slice2_assessments.loc[:,'Activity_Time_Exp'] = type_slice2_assessments['Past_Activities'] / TotalPastTime
 
 type_slice2_assessments = type_slice2_assessments.loc[:,
-                         ['installation_id', 'game_session', 'Clip_Experience', 'Game_Experience',
-                          'Assessment_Experience', 'Activity_Experience']].drop_duplicates()
+                          ['installation_id', 'game_session',  'Game_Time_Exp',
+                           'Assessment_Time_Exp', 'Activity_Time_Exp']].drop_duplicates()
