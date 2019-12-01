@@ -30,9 +30,19 @@ data_train.head()
 compare_shapes(data_test, data_train)
 
 # split json columns
-#data_train = pd.concat([data_train, data_train['event_data'].apply(json_to_series)], axis=1)
+
+#data_train = pd.concat([data_train, json_to_series(data_train['event_data'])], axis=1)
 #data_test = pd.concat([data_test, data_test['event_data'].apply(json_to_series)], axis=1)
 
+data_train.describe()
+data_train.dtypes
 
+data_test.describe()
+data_test.dtypes
 
+data_test.isnull().sum()
+data_train.isnull().sum()
+
+self_proportion_plot(data_test, 'type')
+self_proportion_plot(data_test, 'world')
 

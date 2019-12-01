@@ -84,3 +84,23 @@ def quadratic_weighted_kappa(rater_a, rater_b, min_rating=None, max_rating=None)
             denominator += d * expected_count / num_scored_items
 
     return 1.0 - numerator / denominator
+
+
+def self_proportion_plot(data, col):
+    nrows =  len(data[col])
+    proportions = data[col].value_counts()/nrows
+    proportions = proportions.to_frame()
+    proportions = proportions.reset_index()
+    proportions = proportions.rename(columns={"index": "Group"})
+
+    # Reorder it following the values:
+    ordered_proportions = proportions.sort_values(ascending= True , by=col)
+    my_range = range(1, len(proportions) + 1)
+    plt.hlines(y=my_range, xmin=0, xmax= ordered_proportions[col], color='black')
+    plt.plot(ordered_proportions[col], my_range, "o", ms=7)
+    plt.yticks(my_range, ordered_proportions['Group'])
+    plt.title("Proportions of {}".format(col), loc='left')
+    plt.xlabel('Percentage of Group')
+    plt.ylabel('Group')
+    plt.show()
+
