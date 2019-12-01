@@ -1,12 +1,6 @@
 def compare_shapes(x, y):
     print(x.shape[1] == y.shape[1])
 
-
-def json_to_series(data_set):
-    keys, values = zip(*[item for item in json.loads(data_set).items()])
-    return pd.Series(values, index=keys)
-
-
 def confusion_matrix(rater_a, rater_b, min_rating=None, max_rating=None):
     """
     Returns the confusion matrix between rater's ratings
@@ -96,7 +90,7 @@ def self_proportion_plot(data, col):
     # Reorder it following the values:
     ordered_proportions = proportions.sort_values(ascending= True , by=col)
     my_range = range(1, len(proportions) + 1)
-    plt.hlines(y=my_range, xmin=0, xmax= ordered_proportions[col], color='black')
+    plt.hlines(y=my_range, xmin=0, xmax=ordered_proportions[col], color='black')
     plt.plot(ordered_proportions[col], my_range, "o", ms=7)
     plt.yticks(my_range, ordered_proportions['Group'])
     plt.title("Proportions of {}".format(col), loc='left')
@@ -104,3 +98,11 @@ def self_proportion_plot(data, col):
     plt.ylabel('Group')
     plt.show()
 
+def convert_datetime(df):
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['date'] = df['timestamp'].dt.date
+    df['month'] = df['timestamp'].dt.month
+    df['hour'] = df['timestamp'].dt.hour
+    df['year'] = df['timestamp'].dt.year
+    df['dayofweek'] = df['timestamp'].dt.dayofweek
+    return df
