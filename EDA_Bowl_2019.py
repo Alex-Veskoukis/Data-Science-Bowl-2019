@@ -71,6 +71,17 @@ for i in range(0, data_specs.shape[0]):
 specs_unsplit.describe()
 specs_unsplit.isnull()
 specs_unsplit.head()
+specs_unsplit.shape[0]
+
+from sklearn.feature_extraction.text import CountVectorizer
+
+vec = CountVectorizer()
+sample = specs_unsplit['args_info']
+X = vec.fit_transform(sample)
+terms_count = pd.DataFrame(X.toarray(), columns=vec.get_feature_names())
+terms_count.head()
+terms_count.shape[0]
+# merge with train data and group by installation id and session id
 
 
 #merge specs to train and test data
