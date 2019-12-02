@@ -4,7 +4,6 @@ Created on Fri Nov 22 10:20:53 2019
 @author: uocvc
 """
 
-
 # =============================================================================
 # import os
 # directory = 'C:/Users/Alex/Desktop/data-science-bowl-2019/Data'
@@ -15,12 +14,9 @@ import numpy as np
 from sklearn import linear_model
 import statsmodels.api as sm
 
-
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-
-
 
 train = pd.read_csv('Data/train.csv')
 train_labels = pd.read_csv('Data/train_labels.csv')
@@ -34,66 +30,72 @@ test = pd.read_csv('Data/test.csv')
 # =============================================================================
 
 
-
 def Manipulate_Baseline_Data(data):
-    Assessments = data[data.type=='Assessment'].copy()
+    Assessments = data[data.type == 'Assessment'].copy()
     Assessments['Attempt'] = 0
     AssessementTitles = Assessments['title'].unique()
     AssessementTitles1 = [item for item in AssessementTitles if item not in ['Bird Measurer (Assessment)']]
-    Assessments.loc[Assessments['event_code'].isin([4100]) & Assessments.title.isin(AssessementTitles1),'Attempt'] = 1
-    Assessments.loc[Assessments['event_code'].isin([4110]) & Assessments.title.isin(['Bird Measurer (Assessment)']),'Attempt'] = 1
-    Assessments.loc[Assessments['event_data'].str.contains('false') & Assessments['Attempt'] == 1 ,'IsAttemptSuccessful'] = 0
-    Assessments.loc[Assessments['event_data'].str.contains('true') & Assessments['Attempt'] == 1 ,'IsAttemptSuccessful'] = 1
-    Assessments['timestamp'] = pd.to_datetime(Assessments['timestamp'] , format="%Y-%m-%d %H:%M")
-    Assessments['GameAssessmentSessionTime'] = Assessments.groupby(['installation_id','game_session'])['game_time'].transform(np.max)
-    Assessments['GameAssessmentEventsCount'] = Assessments.groupby(['installation_id','game_session'])['event_count'].transform(np.max)
-    Assessments = Assessments.sort_values('timestamp', ascending = True)
-    Assessments= Assessments[Assessments.Attempt == 1]
+    Assessments.loc[Assessments['event_code'].isin([4100]) & Assessments.title.isin(AssessementTitles1), 'Attempt'] = 1
+    Assessments.loc[
+        Assessments['event_code'].isin([4110]) & Assessments.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
+    Assessments.loc[
+        Assessments['event_data'].str.contains('false') & Assessments['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
+    Assessments.loc[
+        Assessments['event_data'].str.contains('true') & Assessments['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
+    Assessments['timestamp'] = pd.to_datetime(Assessments['timestamp'], format="%Y-%m-%d %H:%M")
+    Assessments['GameAssessmentSessionTime'] = Assessments.groupby(['installation_id', 'game_session'])[
+        'game_time'].transform(np.max)
+    Assessments['GameAssessmentEventsCount'] = Assessments.groupby(['installation_id', 'game_session'])[
+        'event_count'].transform(np.max)
+    Assessments = Assessments.sort_values('timestamp', ascending=True)
+    Assessments = Assessments[Assessments.Attempt == 1]
     Model_Base = Assessments.drop_duplicates()
-    Model_Base['PastAssessmentGames'] =     Model_Base.groupby('installation_id')['game_session'].transform(lambda x: pd.factorize(x)[0])
-    Model_Base = Model_Base.sort_values(['installation_id','timestamp'], ascending = [True,True])
-    Model_Base['Attempts'] = Model_Base.groupby(['installation_id','game_session'])['Attempt'].transform(np.sum)
-    Model_Base['Success']=Model_Base.groupby(['installation_id','game_session'])['IsAttemptSuccessful'].transform(np.sum)
+    Model_Base['PastAssessmentGames'] = Model_Base.groupby('installation_id')['game_session'].transform(
+        lambda x: pd.factorize(x)[0])
+    Model_Base = Model_Base.sort_values(['installation_id', 'timestamp'], ascending=[True, True])
+    Model_Base['Attempts'] = Model_Base.groupby(['installation_id', 'game_session'])['Attempt'].transform(np.sum)
+    Model_Base['Success'] = Model_Base.groupby(['installation_id', 'game_session'])['IsAttemptSuccessful'].transform(
+        np.sum)
     Model_Base['time'] = Model_Base['timestamp'].dt.strftime('%H:%M')
     Model_Base['date'] = Model_Base['timestamp'].dt.date
     del Model_Base['timestamp']
-    Model_Base.loc[Model_Base.time.between('05:01', '12:00', inclusive = True) ,"PartOfDay"] = 'Morning'
-    Model_Base.loc[Model_Base.time.between('12:01', '17:00', inclusive = True) ,"PartOfDay"] = 'Afternoon'
-    Model_Base.loc[Model_Base.time.between('17:01', '21:00', inclusive = True) ,"PartOfDay"] = 'Evening'
-    Model_Base.loc[Model_Base.time.between('21:01', '23:59', inclusive = True) ,"PartOfDay"] = 'Night'
-    Model_Base.loc[Model_Base.time.between('00:00', '05:00', inclusive = True) ,"PartOfDay"] = 'Night'
+    Model_Base.loc[Model_Base.time.between('05:01', '12:00', inclusive=True), "PartOfDay"] = 'Morning'
+    Model_Base.loc[Model_Base.time.between('12:01', '17:00', inclusive=True), "PartOfDay"] = 'Afternoon'
+    Model_Base.loc[Model_Base.time.between('17:01', '21:00', inclusive=True), "PartOfDay"] = 'Evening'
+    Model_Base.loc[Model_Base.time.between('21:01', '23:59', inclusive=True), "PartOfDay"] = 'Night'
+    Model_Base.loc[Model_Base.time.between('00:00', '05:00', inclusive=True), "PartOfDay"] = 'Night'
     Model_Base['title'] = Model_Base['title'].str.rstrip(' (Assessment)')
-    Model_Base = Model_Base.set_index(['installation_id','game_session'])
-    Model_Base= Model_Base[['Attempts','Success','title','PartOfDay','world','GameAssessmentSessionTime',
-                            'GameAssessmentEventsCount','PastAssessmentGames']]
-    Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['PartOfDay'])] ,axis=1)
+    Model_Base = Model_Base.set_index(['installation_id', 'game_session'])
+    Model_Base = Model_Base[['Attempts', 'Success', 'title', 'PartOfDay', 'world', 'GameAssessmentSessionTime',
+                             'GameAssessmentEventsCount', 'PastAssessmentGames']]
+    Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['PartOfDay'])], axis=1)
     del Model_Base['PartOfDay']
-    Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['world'])] ,axis=1)
+    Model_Base = pd.concat([Model_Base, pd.get_dummies(Model_Base['world'])], axis=1)
     del Model_Base['world']
     return Model_Base.drop_duplicates()
-
 
 
 ModelBase = Manipulate_Baseline_Data(train)
 
 # Attach ground truth on train
 train_labels['title'] = train_labels['title'].str.rstrip(' (Assessment)')
-Accuracy = train_labels[['installation_id', 'title', 'game_session','accuracy_group']]
-ModelBase_train = pd.merge(Accuracy, ModelBase,  how='right', on=['installation_id', 'title', 'game_session'])
-ModelBase_train = pd.concat([ModelBase_train, pd.get_dummies(ModelBase_train['title'])] ,axis=1)
-ModelBase_train=ModelBase_train.drop(['title'], axis = 1)
+Accuracy = train_labels[['installation_id', 'title', 'game_session', 'accuracy_group']]
+ModelBase_train = pd.merge(Accuracy, ModelBase, how='right', on=['installation_id', 'title', 'game_session'])
+ModelBase_train = pd.concat([ModelBase_train, pd.get_dummies(ModelBase_train['title'])], axis=1)
+ModelBase_train = ModelBase_train.drop(['title'], axis=1)
 
-ModelBase_train = ModelBase_train.set_index(['installation_id','game_session'])
-#ModelBaseWithAccuracy.to_csv('ModelBaseWithAccuracy.csv')
+ModelBase_train = ModelBase_train.set_index(['installation_id', 'game_session'])
+# ModelBaseWithAccuracy.to_csv('ModelBaseWithAccuracy.csv')
 
 
 ModelBase_Test = Manipulate_Baseline_Data(test)
 conditions = [
-    (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  == 1),
-     (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  == 0.5),
-     (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  < 0.5 ) & (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  > 0 ),
-      (ModelBase_Test['Success'] /ModelBase_Test['Attempts']  == 0)]
-choices = [3, 2, 1,0]
+    (ModelBase_Test['Success'] / ModelBase_Test['Attempts'] == 1),
+    (ModelBase_Test['Success'] / ModelBase_Test['Attempts'] == 0.5),
+    (ModelBase_Test['Success'] / ModelBase_Test['Attempts'] < 0.5) & (
+                ModelBase_Test['Success'] / ModelBase_Test['Attempts'] > 0),
+    (ModelBase_Test['Success'] / ModelBase_Test['Attempts'] == 0)]
+choices = [3, 2, 1, 0]
 # =============================================================================
 # ModelBase_Test['accuracy_group'] = [3 if   (v == 1)
 #                                       else 2 if v  == 0.5
@@ -102,9 +104,10 @@ choices = [3, 2, 1,0]
 # =============================================================================
 
 ModelBase_Test['accuracy_group'] = np.select(conditions, choices, default='black')
-ModelBase_Test = pd.concat([ModelBase_Test, pd.get_dummies(ModelBase_Test['title'])] ,axis=1)
-ModelBase_Test = ModelBase_Test.drop(['title'], axis =1)
-ModelBase_Test = ModelBase_Test[ModelBase_Test.PastGames == ModelBase_Test.groupby('installation_id')['PastGames'].transform(max)]
+ModelBase_Test = pd.concat([ModelBase_Test, pd.get_dummies(ModelBase_Test['title'])], axis=1)
+ModelBase_Test = ModelBase_Test.drop(['title'], axis=1)
+ModelBase_Test = ModelBase_Test[
+    ModelBase_Test.PastGames == ModelBase_Test.groupby('installation_id')['PastGames'].transform(max)]
 # =============================================================================
 # def regression_results(y_true, y_pred):
 #     # Regression metrics
@@ -124,17 +127,14 @@ ModelBase_Test = ModelBase_Test[ModelBase_Test.PastGames == ModelBase_Test.group
 #     
 # =============================================================================
 # Einai aparadekta ta modela apla gia na paroume mia idea    
-X_train = ModelBase_train.loc[:, ~ModelBase_train.columns.isin(['Success','accuracy_group','Attempts'])]
+X_train = ModelBase_train.loc[:, ~ModelBase_train.columns.isin(['Success', 'accuracy_group', 'Attempts'])]
 Y_train = ModelBase_train['accuracy_group']
 
-
-X_test = ModelBase_Test.loc[:, ~ModelBase_Test.columns.isin(['Success','accuracy_group','Attempts'])]
+X_test = ModelBase_Test.loc[:, ~ModelBase_Test.columns.isin(['Success', 'accuracy_group', 'Attempts'])]
 Y_test = ModelBase_Test['accuracy_group']
 
-
 Regressor = linear_model.LinearRegression()
-Regressor.fit(X_train,Y_train)
-
+Regressor.fit(X_train, Y_train)
 
 Prediction_train = Regressor.predict(X_train)
 Prediction_test1 = Regressor.predict(X_test)
@@ -144,7 +144,7 @@ def confusion_matrix(rater_a, rater_b, min_rating=None, max_rating=None):
     """
     Returns the confusion matrix between rater's ratings
     """
-    assert(len(rater_a) == len(rater_b))
+    assert (len(rater_a) == len(rater_b))
     if min_rating is None:
         min_rating = min(rater_a + rater_b)
     if max_rating is None:
@@ -192,7 +192,7 @@ def quadratic_weighted_kappa(rater_a, rater_b, min_rating=None, max_rating=None)
     """
     rater_a = np.array(rater_a, dtype=int)
     rater_b = np.array(rater_b, dtype=int)
-    assert(len(rater_a) == len(rater_b))
+    assert (len(rater_a) == len(rater_b))
     if min_rating is None:
         min_rating = min(min(rater_a), min(rater_b))
     if max_rating is None:
@@ -216,18 +216,10 @@ def quadratic_weighted_kappa(rater_a, rater_b, min_rating=None, max_rating=None)
             numerator += d * conf_mat[i][j] / num_scored_items
             denominator += d * expected_count / num_scored_items
 
-    
     return 1.0 - numerator / denominator
-
-   
-    
-    
-    
-    
 
 
 quadratic_weighted_kappa(Y_test, Prediction_test1)
-
 
 poisson_training_results = sm.GLM(Y_train, X_train, family=sm.families.Poisson()).fit()
 
