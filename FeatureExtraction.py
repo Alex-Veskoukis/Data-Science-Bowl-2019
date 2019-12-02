@@ -26,16 +26,15 @@ train_labels = pd.read_csv('Data/train_labels.csv')
 
 def create_features(data):
     data['Attempt'] = 0
-    trainTitles = data['title'].unique()
-    trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
-    data.loc[data['event_code'].isin([4100]) & data.title.isin(trainTitles_sub), 'Attempt'] = 1
-    data.loc[data['event_code'].isin([4110]) & data.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
-    data.loc[data['event_data'].str.contains('false') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
-    data.loc[data['event_data'].str.contains('true') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
+    # trainTitles = data['title'].unique()
+    # trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
+    # data.loc[data['event_code'].isin([4100]) & data.title.isin(trainTitles_sub), 'Attempt'] = 1
+    # data.loc[data['event_code'].isin([4110]) & data.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
+    # data.loc[data['event_data'].str.contains('false') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
+    # data.loc[data['event_data'].str.contains('true') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
     data['timestamp'] = pd.to_datetime(data['timestamp'], format="%Y-%m-%d %H:%M")
     data['Total_Game_Session_Time'] = data.groupby(['installation_id', 'game_session'])['game_time'].transform(np.max)
-    data['Total_Game_Session_Events'] = data.groupby(['installation_id', 'game_session'])['event_count'].transform(
-        np.max)
+    data['Total_Game_Session_Events'] = data.groupby(['installation_id', 'game_session'])['event_count'].transform(np.max)
     Column_Order_List = [5, 3, 8, 2, 1, 10, 9, 11, 7, 6, 12, 13, 14, 15, 4]
     data = data[[data.columns[i - 1] for i in Column_Order_List]]
     data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
@@ -59,13 +58,17 @@ def create_features(data):
     type_slice_assessments = type_slice[type_slice.Assessment == 1]
     type_slice_assessments = type_slice_assessments.rename(columns={'Order': 'Past_Game_Sessions'})
     type_slice_assessments = type_slice_assessments.drop(['Game', 'Clip', 'Assessment', 'Activity'], axis=1)
-    Past_Game_Sessions = type_slice_assessments['Past_Game_Sessions']
-    type_slice_assessments['Clip_Experience'] = type_slice_assessments['Past_Clips'] / Past_Game_Sessions
-    type_slice_assessments['Game_Experience'] = type_slice_assessments['Past_Games'] / Past_Game_Sessions
-    type_slice_assessments['Assessment_Experience'] = type_slice_assessments['Past_Assessments'] / Past_Game_Sessions
-    type_slice_assessments['Activity_Experience'] = type_slice_assessments['Past_Activities'] / Past_Game_Sessions
+    # Past_Game_Sessions = type_slice_assessments['Past_Game_Sessions']
+    # type_slice_assessments['Clip_Experience'] = type_slice_assessments['Past_Clips'] / Past_Game_Sessions
+    # type_slice_assessments['Game_Experience'] = type_slice_assessments['Past_Games'] / Past_Game_Sessions
+    # type_slice_assessments['Assessment_Experience'] = type_slice_assessments['Past_Assessments'] / Past_Game_Sessions
+    # type_slice_assessments['Activity_Experience'] = type_slice_assessments['Past_Activities'] / Past_Game_Sessions
+    type_slice_assessments['Clip_Experience'] = type_slice_assessments['Past_Clips']
+    type_slice_assessments['Game_Experience'] = type_slice_assessments['Past_Games']
+    type_slice_assessments['Assessment_Experience'] = type_slice_assessments['Past_Assessments']
+    type_slice_assessments['Activity_Experience'] = type_slice_assessments['Past_Activities']
     type_slice_assessments = type_slice_assessments.loc[:,
-                             ['installation_id', 'game_session', 'Clip_Experience', 'Game_Experience',
+                             ['installation_id', 'game_session','Past_Game_Sessions', 'Clip_Experience', 'Game_Experience',
                               'Assessment_Experience', 'Activity_Experience']].drop_duplicates()
     # Slice 1 / Type time spent Experience Measures
     type_slice2 = pd.pivot_table(
@@ -82,13 +85,17 @@ def create_features(data):
     type_slice2_assessments = type_slice2[type_slice2.Assessment != 0]
     type_slice2_assessments.loc[:, 'Past_Assessments'] = type_slice2_assessments.groupby('installation_id')[
         'Past_Assessments'].transform(lambda x: x.shift(1, fill_value=0))
-    TotalPastTime = type_slice2_assessments.Past_Activities + type_slice2_assessments.Past_Games + type_slice2_assessments.Past_Clips + type_slice2.Past_Assessments
-    type_slice2_assessments.loc[:, 'Clip_Time_Exp'] = type_slice2_assessments['Past_Clips'] / TotalPastTime
-    type_slice2_assessments.loc[:, 'Game_Time_Exp'] = type_slice2_assessments['Past_Games'] / TotalPastTime
-    type_slice2_assessments.loc[:, 'Assessment_Time_Exp'] = type_slice2_assessments['Past_Assessments'] / TotalPastTime
-    type_slice2_assessments.loc[:, 'Activity_Time_Exp'] = type_slice2_assessments['Past_Activities'] / TotalPastTime
+    type_slice2_assessments.loc[:,'TotalPastTime'] = type_slice2_assessments[['Past_Activities','Past_Games','Past_Clips','Past_Assessments']].sum(axis=1)
+    # type_slice2_assessments.loc[:, 'Clip_Time_Exp'] = type_slice2_assessments['Past_Clips'] / TotalPastTime
+    # type_slice2_assessments.loc[:, 'Game_Time_Exp'] = type_slice2_assessments['Past_Games'] / TotalPastTime
+    # type_slice2_assessments.loc[:, 'Assessment_Time_Exp'] = type_slice2_assessments['Past_Assessments'] / TotalPastTime
+    # type_slice2_assessments.loc[:, 'Activity_Time_Exp'] = type_slice2_assessments['Past_Activities'] / TotalPastTime
+    type_slice2_assessments.loc[:,'Clip_Time_Exp'] = type_slice2_assessments['Past_Clips']
+    type_slice2_assessments.loc[:,'Game_Time_Exp'] = type_slice2_assessments['Past_Games']
+    type_slice2_assessments.loc[:,'Assessment_Time_Exp'] = type_slice2_assessments['Past_Assessments']
+    type_slice2_assessments.loc[:,'Activity_Time_Exp'] = type_slice2_assessments['Past_Activities']
     type_slice2_assessments = type_slice2_assessments.loc[:,
-                              ['installation_id', 'game_session', 'Game_Time_Exp',
+                              ['installation_id', 'game_session', 'TotalPastTime','Game_Time_Exp',
                                'Assessment_Time_Exp', 'Activity_Time_Exp']].drop_duplicates()
     MergedSlices = pd.merge(type_slice_assessments, type_slice2_assessments, on=['installation_id', 'game_session'],
                             how='inner')
@@ -108,6 +115,12 @@ def create_features(data):
     Assessments['title'] = Assessments['title'].str.rstrip(' (Assessment)')
     Assessments = Assessments.set_index(['installation_id', 'game_session'])
     Assessments = Assessments[['title', 'PartOfDay', 'world']]
+    Assessments['title'] = pd.Categorical(Assessments['title'])
+    # Assessments['title'] = Assessments['title'].cat.codes
+    Assessments['PartOfDay'] =pd.Categorical(Assessments['PartOfDay'])
+    # Assessments['PartOfDay'] = Assessments['PartOfDay'].cat.codes
+    Assessments['world'] = pd.Categorical(Assessments['world'])
+    # Assessments['world'] = Assessments['world'].cat.codes
     Assessments = pd.concat([Assessments, pd.get_dummies(Assessments['PartOfDay'])], axis=1)
     del Assessments['PartOfDay']
     Assessments = pd.concat([Assessments, pd.get_dummies(Assessments['world'])], axis=1)
@@ -128,7 +141,7 @@ FinalTrain = pd.merge(Final,
                       how='inner',
                       on=['installation_id', 'game_session'])
 
-Final = Final.set_index(['installation_id', 'game_session'])
+FinalTrain = FinalTrain.set_index(['installation_id', 'game_session'])
 
 Test_Features = create_features(test)
 
@@ -170,12 +183,44 @@ def get_test_set_accuracy(data):
     #                                       else 0  for v in ratio ]
     # =============================================================================
     Assess['accuracy_group'] = np.select(conditions, choices, default='black')
+    Assess['accuracy'] = ratio
     Assess = Assess.reset_index()
     Assess = Assess.sort_values(['installation_id', 'timestamp'])
     Assess = Assess.groupby(['installation_id']).tail(1)
-    return Assess[['accuracy_group', 'installation_id', 'game_session']]
+    return Assess[['accuracy','accuracy_group', 'installation_id', 'game_session']]
 
 
 Test_set = get_test_set_accuracy(test)
 
-Test_set_full = pd.merge(Test_Features, Test_set, on=['installation_id', 'game_session'], how='inner')
+Test_set_full = pd.merge(Test_Features, Test_set.loc[:, ~ Test_set.columns.isin(['accuracy'])], on=['installation_id', 'game_session'], how='inner')
+
+
+X_train = FinalTrain.loc[:, ~FinalTrain.columns.isin(['accuracy_group','installation_id', 'game_session','PartOfDay'])]
+Y_train = FinalTrain['accuracy_group']
+
+
+X_test = Test_set_full.loc[:, ~Test_Features.columns.isin(['accuracy_group','installation_id', 'game_session'])]
+Y_test = Test_set_full['accuracy_group'].to_numpy(dtype=int)
+
+from sklearn.neighbors import KNeighborsClassifier
+
+knn = KNeighborsClassifier(n_neighbors=5, metric='euclidean')
+knn.fit(X_train, Y_train)
+
+Y_pred = knn.predict(X_test)
+
+import auxiliary_functions
+
+quadratic_weighted_kappa(Y_test, Y_pred)
+
+
+from sklearn.ensemble import RandomForestRegressor
+# Instantiate model with 1000 decision trees
+rf = RandomForestRegressor(n_estimators = 1000, random_state = 42)
+# Train the model on training data
+rf.fit(X_train, Y_train)
+
+Y_pred = rf.predict(X_test)
+
+quadratic_weighted_kappa(Y_test, Y_pred)
+
