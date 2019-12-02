@@ -26,12 +26,12 @@ train_labels = pd.read_csv('Data/train_labels.csv')
 
 def create_features(data):
     data['Attempt'] = 0
-    # trainTitles = data['title'].unique()
-    # trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
-    # data.loc[data['event_code'].isin([4100]) & data.title.isin(trainTitles_sub), 'Attempt'] = 1
-    # data.loc[data['event_code'].isin([4110]) & data.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
-    # data.loc[data['event_data'].str.contains('false') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
-    # data.loc[data['event_data'].str.contains('true') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
+    trainTitles = data['title'].unique()
+    trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
+    data.loc[data['event_code'].isin([4100]) & data.title.isin(trainTitles_sub), 'Attempt'] = 1
+    data.loc[data['event_code'].isin([4110]) & data.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
+    data.loc[data['event_data'].str.contains('false') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
+    data.loc[data['event_data'].str.contains('true') & data['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
     data['timestamp'] = pd.to_datetime(data['timestamp'], format="%Y-%m-%d %H:%M")
     data['Total_Game_Session_Time'] = data.groupby(['installation_id', 'game_session'])['game_time'].transform(np.max)
     data['Total_Game_Session_Events'] = data.groupby(['installation_id', 'game_session'])['event_count'].transform(np.max)
