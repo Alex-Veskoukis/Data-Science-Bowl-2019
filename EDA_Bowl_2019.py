@@ -85,12 +85,31 @@ terms_count.head()
 terms_count.shape
 
 
-# merge with train data and group by installation id and session id
-specs_with_terms = pd.concat([specs_unsplit.reset_index(drop=True), terms_count], axis=1)
+from sklearn.decomposition import PCA
+model = PCA(n_components=5)
+model.fit(terms_count)
+X_5D = model.transform(terms_count)
+
+reduced_terms = pd.DataFrame()
+reduced_terms['PCA1'] = X_5D[:, 0]
+reduced_terms['PCA2'] = X_5D[:, 1]
+reduced_terms['PCA3'] = X_5D[:, 2]
+reduced_terms['PCA4'] = X_5D[:, 3]
+reduced_terms['PCA5'] = X_5D[:, 4]
+
+reduced_terms = pd.concat([reduced_terms.reset_index(drop=True),
+                           specs_unsplit[['event_id']].reset_index(drop=True)], axis=1)
+
+
 
 #merge specs to train and test data
-data_train_spec = pd.merge(data_train, specs_unsplit, on='event_id')
-data_test_spec = pd.merge(data_test, specs_unsplit, on='event_id')
+data_train_spec = pd.merge(data_train, reduced_terms, on='event_id')
+data_test_spec = pd.merge(data_test, reduced_terms, on='event_id')
+
+# merge with train data and group by installation id and game session
+data_train_compon = data_train_spec.groupby(['installation_id', 'game_session'])['PCA1','PCA2','PCA3','PCA4','PCA5'].mean()
+data_test_compon = data_test_spec.groupby(['installation_id', 'game_session'])['PCA1','PCA2','PCA3','PCA4','PCA5'].mean()
+
 
 # create date time vars based on timestamp
 convert_datetime(data_train)
