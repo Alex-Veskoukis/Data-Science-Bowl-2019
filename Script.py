@@ -107,7 +107,7 @@ ModelBase_Test['accuracy_group'] = np.select(conditions, choices, default='black
 ModelBase_Test = pd.concat([ModelBase_Test, pd.get_dummies(ModelBase_Test['title'])], axis=1)
 ModelBase_Test = ModelBase_Test.drop(['title'], axis=1)
 ModelBase_Test = ModelBase_Test[
-    ModelBase_Test.PastGames == ModelBase_Test.groupby('installation_id')['PastGames'].transform(max)]
+    ModelBase_Test.PastAssessmentGames == ModelBase_Test.groupby('installation_id')['PastAssessmentGames'].transform(max)]
 # =============================================================================
 # def regression_results(y_true, y_pred):
 #     # Regression metrics
