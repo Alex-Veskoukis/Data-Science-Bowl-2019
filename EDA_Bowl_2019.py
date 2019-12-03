@@ -56,6 +56,7 @@ for column in data_train.columns.values:
 
 
 # split json columns
+
 event_data_train = pd.io.json.json_normalize(data_train['event_data'].apply(json.loads))
 event_data_test = pd.io.json.json_normalize(data_test['event_data'].apply(json.loads))
 
