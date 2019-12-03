@@ -53,6 +53,8 @@ data_train.nunique()
 for column in data_train.columns.values:
     print("Unique values of", column, "----", data_train[column].nunique())
 
+
+
 # split json columns
 event_data_train = pd.io.json.json_normalize(data_train['event_data'].apply(json.loads))
 event_data_test = pd.io.json.json_normalize(data_test['event_data'].apply(json.loads))
@@ -80,9 +82,11 @@ sample = specs_unsplit['args_info']
 X = vec.fit_transform(sample)
 terms_count = pd.DataFrame(X.toarray(), columns=vec.get_feature_names())
 terms_count.head()
-terms_count.shape[0]
-# merge with train data and group by installation id and session id
+terms_count.shape
 
+
+# merge with train data and group by installation id and session id
+specs_with_terms = pd.concat([specs_unsplit.reset_index(drop=True), terms_count], axis=1)
 
 #merge specs to train and test data
 data_train_spec = pd.merge(data_train, specs_unsplit, on='event_id')
