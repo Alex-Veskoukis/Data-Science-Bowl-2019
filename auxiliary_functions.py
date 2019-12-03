@@ -83,6 +83,7 @@ def quadratic_weighted_kappa(rater_a, rater_b, min_rating=None, max_rating=None)
 
 
 def self_proportion_plot(data, col):
+    import matplotlib.pyplot as plt
     nrows =  len(data[col])
     proportions = data[col].value_counts()/nrows
     proportions = proportions.to_frame()
