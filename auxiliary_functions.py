@@ -136,12 +136,4 @@ def visualize_classifier(model, X, y, ax=None, cmap='rainbow'):
     ax.set(xlim=xlim, ylim=ylim)
 
 
-from sklearn.metrics import confusion_matrix
-
-mat = confusion_matrix(ytest, y_model)
-sns.heatmap(mat, square=True, annot=True, cbar=False)
-plt.xlabel('predicted values')
-plt.ylabel('true value');
-
-
 
