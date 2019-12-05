@@ -11,14 +11,15 @@ import os
 # =============================================================================
 import pandas as pd
 import numpy as np
+from auxiliary_functions import *
 
-train = pd.read_csv('Data/train.csv')
-test = pd.read_csv('Data/test.csv')
+train = pd.read_csv('C:\\Kaggle\\train.csv')
+test = pd.read_csv('C:\\Kaggle\\test.csv')
 # =============================================================================
-train_labels = pd.read_csv('Data/train_labels.csv')
+train_labels = pd.read_csv('C:\\Kaggle\\train_labels.csv')
 
 
-specs = pd.read_csv('Data/specs.csv')
+specs = pd.read_csv('C:\\Kaggle\\specs.csv')
 # =============================================================================
 #
 # Unique_Installations = train.installation_id.unique()
@@ -251,7 +252,7 @@ from sklearn.ensemble import RandomForestClassifier
 # Instantiate model with 1000 decision trees
 
 
-rf =RandomForestClassifier(n_estimators =  33, n_jobs=-1)
+rf =RandomForestClassifier(n_estimators =  33, n_jobs=-1 ,random_state=42)
 
 # rf =RandomForestRegressor(n_estimators =  5, max_features = 'sqrt')
 #n_estimators=50 ,  random_state=42 , max_features = 'auto', bootstrap=True, criterion = 'mae'
@@ -265,6 +266,26 @@ quadratic_weighted_kappa(Y_test, Y_pred)
 
 
 
+
+# importance
+importances = rf.feature_importances_
+from sklearn import metrics
+from sklearn.ensemble import ExtraTreesClassifier
+# load the iris datasets
+# fit an Extra Trees model to the data
+model = ExtraTreesClassifier()
+model.fit(X_train, Y_train)
+# display the relative importance of each attribute
+print(model.feature_importances_)
+
+
+# RFE
+from sklearn.feature_selection import RFE
+rfe = RFE(rf, 10)
+rfe = rfe.fit(X_train, Y_train)
+# summarize the selection of the attributes
+print(rfe.support_)
+print(rfe.ranking_)
 
 
 n_estimators = range(1,100,1)
@@ -310,3 +331,18 @@ plt.close()
 #          skopt.space.Real(0.1, 1.0, name='feature_fraction', prior='uniform'),
 #          skopt.space.Real(0.1, 1.0, name='subsample', prior='uniform'),
 #          ]
+
+
+# voting classifiers
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+clf1 = MLPClassifier(solver='lbfgs', alpha=1e-5,
+             hidden_layer_sizes=(5, 2), random_state=42)
+clf2 = RandomForestClassifier(n_estimators =  33, n_jobs=-1 ,random_state=42)
+eclf1 = VotingClassifier(estimators=[('mlp', clf1),('rf', clf2) ],
+                         voting='hard')
+eclf1 = eclf1.fit(X_train, Y_train)
+
+Y_pred = eclf1.predict(X_test)
+
+quadratic_weighted_kappa(Y_test, Y_pred)

@@ -102,6 +102,7 @@ def self_proportion_plot(data, col):
     plt.show()
 
 def convert_datetime(df):
+    import pandas as pd
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['date'] = df['timestamp'].dt.date
     df['month'] = df['timestamp'].dt.month
