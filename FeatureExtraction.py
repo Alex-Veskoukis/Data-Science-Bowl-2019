@@ -29,41 +29,27 @@ def create_features(data):
     import numpy as np
     trainTitles = data['title'].unique()
     trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
-
     AttemptIndicator = (data.type == 'Assessment') & \
                        ((data.event_code.isin([4100]) & data.title.isin(trainTitles_sub)) |
                         (data.event_code.isin([4110]) & data.title.isin(['Bird Measurer (Assessment)'])))
     data['Attempt'] = 0
     data.loc[AttemptIndicator, 'Attempt'] = 1
-
-    # FailedAttemptIndicator = data['event_data'].str.contains('false') & AttemptIndicator
     SuccessfulAttemptIndicator = data['event_data'].str.contains('true') & AttemptIndicator
     data['IsAttemptSuccessful'] = 0
     data.loc[SuccessfulAttemptIndicator, 'IsAttemptSuccessful'] = 1
-
     data['timestamp'] = pd.to_datetime(data['timestamp'], format="%Y-%m-%d %H:%M")
-
     Inst_Group = data.groupby('installation_id')
     Inst_Game_Group = data.groupby(['installation_id', 'game_session'])
     data['Total_Game_Session_Time'] = Inst_Game_Group['game_time'].transform(np.max)
     data['Total_Game_Session_Events'] = Inst_Game_Group['event_count'].transform(np.max)
     data['Assessments_played_Counter'] = data[data.type == 'Assessment'].groupby('installation_id')['game_session'].transform(
         lambda x: np.round(pd.factorize(x)[0] + 1))
-
-    # data['Past_Assessment_Attempts'] = Inst_Game_Group['Attempt'].transform(np.sum)
-
-    # Column_Order_List = ['installation_id', 'game_session', 'timestamp', 'game_time', 'event_id', 'event_code',
-    #                      'event_count', 'title', 'type', 'world', 'event_data', 'Attempt', 'IsAttemptSuccessful',
-    #                      'Total_Game_Session_Time', 'Total_Game_Session_Events', 'Past_Assessment_Attempts']
-    # data = data[Column_Order_List]
     data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
-
     data['Cumulative_Attempts'] = Inst_Group['Attempt'].transform(np.cumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
 
     data['Assessment_Session_Time'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])['game_time'].transform(np.max)
     data['Assessment_NumberOfEvents'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])['event_count'].transform(np.max)
-
     # Slice 1
     slice1 = data.copy().loc[(data.game_time == data.Total_Game_Session_Time) &
                              (data.event_count == data.Total_Game_Session_Events),
@@ -71,7 +57,6 @@ def create_features(data):
                               'Total_Game_Session_Events']].drop_duplicates()
     slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
     slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
-
     # Slice 2
     slice2 = data.copy().loc[(data.game_time == data.Total_Game_Session_Time) &
                              (data.event_count == data.Total_Game_Session_Events),
@@ -86,13 +71,11 @@ def create_features(data):
     slice2 = slice2.loc[:, ['installation_id','game_session',
                             'Game_Session_Order','Past_Total_Attempts',
                             'Past_Total_Successes','Past_Assessments_Played']]
-
     # Slice 3
     slice3 = data.loc[data.type == 'Assessment', ['installation_id',
                                                   'game_session',
                                                   'Assessment_Session_Time',
                                                   'Assessment_NumberOfEvents']].drop_duplicates()
-
     # Slice 1 / Type frequency Experience Measures
     type_slice = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
                                 index=['installation_id', 'game_session', 'Game_Session_Order'],
@@ -140,45 +123,27 @@ def create_features(data):
     Assessments = Assessments.sort_values('timestamp', ascending=True)
     Assessments = Assessments.drop_duplicates()
     Assessments = convert_datetime(Assessments)
-
     Assessments['time'] = Assessments['timestamp'].dt.strftime('%H:%M')
     Assessments['date'] = Assessments['timestamp'].dt.date
-
-
     del Assessments['timestamp']
-
-    # Assessments.loc[Assessments.time.between('05:01', '12:00', inclusive=True), "PartOfDay"] = 'Morning'
-    # Assessments.loc[Assessments.time.between('12:01', '17:00', inclusive=True), "PartOfDay"] = 'Afternoon'
-    # Assessments.loc[Assessments.time.between('17:01', '21:00', inclusive=True), "PartOfDay"] = 'Evening'
-    # Assessments.loc[Assessments.time.between('21:01', '23:59', inclusive=True), "PartOfDay"] = 'Night'
-    # Assessments.loc[Assessments.time.between('00:00', '05:00', inclusive=True), "PartOfDay"] = 'Night'
     Assessments['title'] = Assessments['title'].str.rstrip(' (Assessment)')
     Assessments = Assessments.set_index(['installation_id', 'game_session'])
     Assessments = Assessments[['title',  'world', 'month', 'hour', 'year', 'dayofweek']]
     Assessments['title'] = pd.Categorical(Assessments['title'])
-    # Assessments['title'] = Assessments['title'].cat.codes
-    # Assessments['PartOfDay'] = pd.Categorical(Assessments['PartOfDay'])
-    # Assessments['PartOfDay'] = Assessments['PartOfDay'].cat.codes
     Assessments['world'] = pd.Categorical(Assessments['world'])
-    # Assessments['world'] = Assessments['world'].cat.codes
-    # Assessments = pd.concat([Assessments, pd.get_dummies(Assessments['PartOfDay'])], axis=1)
-    # del Assessments['PartOfDay']
     Assessments = pd.concat([Assessments, pd.get_dummies(Assessments['world'])], axis=1)
     del Assessments['world']
     Assessments = pd.concat([Assessments, pd.get_dummies(Assessments['title'])], axis=1)
     del Assessments['title']
-    # Assessments = Assessments.drop(['title'], axis=1)
     Assessments = Assessments.reset_index()
     Assessments = Assessments.drop_duplicates()
     FinalData = pd.merge(Assessments, MergedSlices, how='inner',
                          on=['installation_id', 'game_session'])
     FinalData = pd.merge(FinalData, slice2, how='inner',
                          on=['installation_id', 'game_session'])
-
     FinalData = pd.merge(FinalData, slice3, how='inner',
                          on=['installation_id', 'game_session'])
     del FinalData['Game_Session_Order']
-
     return FinalData
 
 
@@ -260,12 +225,6 @@ def get_test_set_accuracy(data):
         (ratio < 0.5) & (ratio > 0),
         (ratio == 0)]
     choices = [3, 2, 1, 0]
-    # =============================================================================
-    # ModelBase_Test['accuracy_group'] = [3 if   (v == 1)
-    #                                       else 2 if v  == 0.5
-    #                                       else 1 if  (v < 0.5 ) & (v  > 0 )
-    #                                       else 0  for v in ratio ]
-    # =============================================================================
     Assess['accuracy_group'] = np.select(conditions, choices, default='black')
     Assess['accuracy'] = ratio
     Assess = Assess.reset_index()
@@ -327,6 +286,9 @@ plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
 plt.ylabel('AUC score')
 plt.xlabel('n_estimators')
 plt.show()
+plt.close()
+
+
 # from sklearn.model_selection import RandomizedSearchCV
 # from sklearn.metrics import  make_scorer
 # rf_params = {
