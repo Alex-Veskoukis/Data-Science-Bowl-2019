@@ -283,13 +283,21 @@ from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 clf1 = MLPClassifier(solver='lbfgs', alpha=1e-5,
                      hidden_layer_sizes=(5, 2), random_state=42)
 clf2 = RandomForestClassifier(n_estimators=33, n_jobs=-1, random_state=42)
-eclf1 = VotingClassifier(estimators=[('mlp', clf1), ('rf', clf2)],
+
+clf3 = VotingClassifier(estimators=[('mlp', clf1), ('rf', clf2)],
                          voting='hard')
-eclf1 = eclf1.fit(X_train, Y_train)
+eclf1 = clf1.fit(X_train, Y_train)
+eclf2 = clf2.fit(X_train, Y_train)
+eclf3 = clf3.fit(X_train, Y_train)
 
-Y_pred = eclf1.predict(X_test)
+Y_pred1 = eclf1.predict(X_test)
+af.quadratic_weighted_kappa(Y_test, Y_pred1)
 
-af.quadratic_weighted_kappa(Y_test, Y_pred)
+Y_pred2 = eclf2.predict(X_test)
+af.quadratic_weighted_kappa(Y_test, Y_pred2)
+
+Y_pred3 = eclf3.predict(X_test)
+af.quadratic_weighted_kappa(Y_test, Y_pred3)
 
 # To Test
 # specs_unsplit = pd.DataFrame()
