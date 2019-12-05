@@ -33,14 +33,17 @@ def create_features(data):
     Inst_Game_Group = data.groupby(['installation_id', 'game_session'])
     data['Total_Game_Session_Time'] = Inst_Game_Group['game_time'].transform(np.max)
     data['Total_Game_Session_Events'] = Inst_Game_Group['event_count'].transform(np.max)
-    data['Assessments_played_Counter'] = data[data.type == 'Assessment'].groupby('installation_id')['game_session'].transform(
+    data['Assessments_played_Counter'] = data[data.type == 'Assessment'].groupby('installation_id')[
+        'game_session'].transform(
         lambda x: np.round(pd.factorize(x)[0] + 1))
     data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
     data['Cumulative_Attempts'] = Inst_Group['Attempt'].transform(np.cumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
 
-    data['Assessment_Session_Time'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])['game_time'].transform(np.max)
-    data['Assessment_NumberOfEvents'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])['event_count'].transform(np.max)
+    data['Assessment_Session_Time'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])[
+        'game_time'].transform(np.max)
+    data['Assessment_NumberOfEvents'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])[
+        'event_count'].transform(np.max)
     # Slice 1
     slice1 = data.copy().loc[(data.game_time == data.Total_Game_Session_Time) &
                              (data.event_count == data.Total_Game_Session_Events),
@@ -52,16 +55,20 @@ def create_features(data):
     slice2 = data.copy().loc[(data.game_time == data.Total_Game_Session_Time) &
                              (data.event_count == data.Total_Game_Session_Events),
                              ['installation_id', 'game_session', 'type',
-                              'Cumulative_Attempts', 'Cumulative_Successes', 'Assessments_played_Counter']].drop_duplicates()
+                              'Cumulative_Attempts', 'Cumulative_Successes',
+                              'Assessments_played_Counter']].drop_duplicates()
     slice2['Game_Session_Order'] = slice2.groupby('installation_id')['game_session'].cumcount() + 1
     slice2 = slice2.sort_values(['installation_id', 'Game_Session_Order'])
     slice2 = slice2[slice2.type == 'Assessment']
-    slice2['Past_Total_Attempts'] = round(slice2.groupby('installation_id')['Cumulative_Attempts'].shift(1, fill_value = 0))
-    slice2['Past_Total_Successes'] = round(slice2.groupby('installation_id')['Cumulative_Successes'].shift(1, fill_value=0))
-    slice2['Past_Assessments_Played'] = round(slice2.groupby('installation_id')['Assessments_played_Counter'].shift(1, fill_value=0))
-    slice2 = slice2.loc[:, ['installation_id','game_session',
-                            'Game_Session_Order','Past_Total_Attempts',
-                            'Past_Total_Successes','Past_Assessments_Played']]
+    slice2['Past_Total_Attempts'] = round(
+        slice2.groupby('installation_id')['Cumulative_Attempts'].shift(1, fill_value=0))
+    slice2['Past_Total_Successes'] = round(
+        slice2.groupby('installation_id')['Cumulative_Successes'].shift(1, fill_value=0))
+    slice2['Past_Assessments_Played'] = round(
+        slice2.groupby('installation_id')['Assessments_played_Counter'].shift(1, fill_value=0))
+    slice2 = slice2.loc[:, ['installation_id', 'game_session',
+                            'Game_Session_Order', 'Past_Total_Attempts',
+                            'Past_Total_Successes', 'Past_Assessments_Played']]
     # Slice 3
     slice3 = data.loc[data.type == 'Assessment', ['installation_id',
                                                   'game_session',
@@ -100,11 +107,13 @@ def create_features(data):
     type_slice2['Time_spent_on_Clips'] = type_slice2.groupby('installation_id')['Clip'].transform(np.cumsum)
     type_slice2['Time_spent_on_Assessments'] = type_slice2.groupby('installation_id')['Assessment'].transform(np.cumsum)
     type_slice2_assessments = type_slice2[type_slice2.Assessment != 0]
-    type_slice2_assessments.loc[:,'Total_Time_spent'] = type_slice2_assessments[
-        ['Time_spent_on_Activities', 'Time_spent_on_Games', 'Time_spent_on_Clips', 'Time_spent_on_Assessments']].sum(axis=1)
+    type_slice2_assessments.loc[:, 'Total_Time_spent'] = type_slice2_assessments[
+        ['Time_spent_on_Activities', 'Time_spent_on_Games', 'Time_spent_on_Clips', 'Time_spent_on_Assessments']].sum(
+        axis=1)
     type_slice2_assessments = type_slice2_assessments.loc[:,
                               ['installation_id', 'game_session', 'Total_Time_spent', 'Time_spent_on_Activities',
-                               'Time_spent_on_Games', 'Time_spent_on_Clips', 'Time_spent_on_Assessments']].drop_duplicates()
+                               'Time_spent_on_Games', 'Time_spent_on_Clips',
+                               'Time_spent_on_Assessments']].drop_duplicates()
 
     MergedSlices = pd.merge(type_slice_assessments, type_slice2_assessments, on=['installation_id', 'game_session'],
                             how='inner')
@@ -119,7 +128,7 @@ def create_features(data):
     del Assessments['timestamp']
     Assessments['title'] = Assessments['title'].str.rstrip(' (Assessment)')
     Assessments = Assessments.set_index(['installation_id', 'game_session'])
-    Assessments = Assessments[['title',  'world', 'month', 'hour', 'year', 'dayofweek']]
+    Assessments = Assessments[['title', 'world', 'month', 'hour', 'year', 'dayofweek']]
     Assessments['title'] = pd.Categorical(Assessments['title'])
     Assessments['world'] = pd.Categorical(Assessments['world'])
     Assessments = pd.concat([Assessments, pd.get_dummies(Assessments['world'])], axis=1)
@@ -136,7 +145,6 @@ def create_features(data):
                          on=['installation_id', 'game_session'])
     del FinalData['Game_Session_Order']
     return FinalData
-
 
 
 Final = create_features(train)
@@ -194,7 +202,6 @@ Test_set = get_test_set_accuracy(test)
 Test_set_full = pd.merge(Test_Features, Test_set.loc[:, ~ Test_set.columns.isin(['accuracy'])],
                          on=['installation_id', 'game_session'], how='inner')
 
-
 # Create Test and Control sets
 X_train = FinalTrain.loc[:,
           ~FinalTrain.columns.isin(['accuracy_group', 'installation_id', 'game_session', 'PartOfDay'])]
@@ -203,22 +210,19 @@ Y_train = FinalTrain['accuracy_group'].astype(int)
 X_test = Test_set_full.loc[:, ~Test_Features.columns.isin(['accuracy_group', 'installation_id', 'game_session'])]
 Y_test = Test_set_full['accuracy_group'].to_numpy(dtype=int)
 
-
 # Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
 
-rf = RandomForestClassifier(n_estimators = 83, n_jobs=-1, random_state=42)
+rf = RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42)
 rf.fit(X_train, Y_train)
 Y_pred = rf.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred)
-
-
-
 
 # importance
 importances = rf.feature_importances_
 from sklearn import metrics
 from sklearn.ensemble import ExtraTreesClassifier
+
 # load the iris datasets
 # fit an Extra Trees model to the data
 model = ExtraTreesClassifier()
@@ -226,30 +230,30 @@ model.fit(X_train, Y_train)
 # display the relative importance of each attribute
 print(model.feature_importances_)
 
-
 # RFE
 from sklearn.feature_selection import RFE
+
 rfe = RFE(rf, 10)
 rfe = rfe.fit(X_train, Y_train)
 # summarize the selection of the attributes
 print(rfe.support_)
 print(rfe.ranking_)
 
-
 # Tune rf
-n_estimators = range(1,100)
+n_estimators = range(1, 100)
 train_results = []
 test_results = []
 for estimator in n_estimators:
-   rf = RandomForestClassifier(n_estimators=estimator, n_jobs=-1, random_state=42)
-   rf.fit(X_train, Y_train)
-   train_pred = rf.predict(X_train)
-   y_pred = rf.predict(X_test)
-   test_results.append(af.quadratic_weighted_kappa(Y_test, y_pred))
-   train_results.append(af.quadratic_weighted_kappa(Y_train, train_pred))
+    rf = RandomForestClassifier(n_estimators=estimator, n_jobs=-1, random_state=42)
+    rf.fit(X_train, Y_train)
+    train_pred = rf.predict(X_train)
+    y_pred = rf.predict(X_test)
+    test_results.append(af.quadratic_weighted_kappa(Y_test, y_pred))
+    train_results.append(af.quadratic_weighted_kappa(Y_train, train_pred))
 
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerLine2D
+
 line1, = plt.plot(n_estimators, train_results, 'b', label='Train kappa')
 line2, = plt.plot(n_estimators, test_results, 'r', label='Test kappa')
 plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
@@ -257,7 +261,6 @@ plt.ylabel('Kappa score')
 plt.xlabel('n_estimators')
 plt.show()
 plt.close()
-
 
 # from sklearn.model_selection import RandomizedSearchCV
 # from sklearn.metrics import  make_scorer
@@ -276,10 +279,11 @@ plt.close()
 # voting classifiers
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+
 clf1 = MLPClassifier(solver='lbfgs', alpha=1e-5,
-             hidden_layer_sizes=(5, 2), random_state=42)
-clf2 = RandomForestClassifier(n_estimators =  33, n_jobs=-1 ,random_state=42)
-eclf1 = VotingClassifier(estimators=[('mlp', clf1),('rf', clf2) ],
+                     hidden_layer_sizes=(5, 2), random_state=42)
+clf2 = RandomForestClassifier(n_estimators=33, n_jobs=-1, random_state=42)
+eclf1 = VotingClassifier(estimators=[('mlp', clf1), ('rf', clf2)],
                          voting='hard')
 eclf1 = eclf1.fit(X_train, Y_train)
 
