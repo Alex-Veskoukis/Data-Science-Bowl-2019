@@ -41,7 +41,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm, tree
 import xgboost
-
+classifiers = []
 model1 = xgboost.XGBClassifier()
 classifiers.append(model1)
 model2 = svm.SVC()
