@@ -289,7 +289,7 @@ eclf1 = eclf1.fit(X_train, Y_train)
 
 Y_pred = eclf1.predict(X_test)
 
-quadratic_weighted_kappa(Y_test, Y_pred)
+af.quadratic_weighted_kappa(Y_test, Y_pred)
 
 # To Test
 # specs_unsplit = pd.DataFrame()
