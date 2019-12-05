@@ -203,12 +203,12 @@ Test_set_full = pd.merge(Test_Features, Test_set.loc[:, ~ Test_set.columns.isin(
                          on=['installation_id', 'game_session'], how='inner')
 
 # Create Test and Control sets
-X_train = FinalTrain.loc[:,
-          ~FinalTrain.columns.isin(['accuracy_group', 'installation_id', 'game_session', 'PartOfDay'])]
+X_train = FinalTrain.loc[:, ~FinalTrain.columns.isin(['accuracy_group', 'installation_id', 'game_session', 'PartOfDay'])]
 Y_train = FinalTrain['accuracy_group'].astype(int)
 
 X_test = Test_set_full.loc[:, ~Test_Features.columns.isin(['accuracy_group', 'installation_id', 'game_session'])]
 Y_test = Test_set_full['accuracy_group'].to_numpy(dtype=int)
+
 
 # Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
@@ -280,22 +280,20 @@ plt.close()
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 
-clf1 = MLPClassifier(solver='lbfgs', alpha=1e-5,
-                     hidden_layer_sizes=(5, 2), random_state=42)
+# clf1 = MLPClassifier(solver='lbfgs', alpha=1e-5,
+#                      hidden_layer_sizes=(5, 2), random_state=1)
+# eclf1 = clf1.fit(X_train, Y_train)
+# Y_pred1 = eclf1.predict(X_test)
+# af.quadratic_weighted_kappa(Y_test, Y_pred1)
+
 clf2 = RandomForestClassifier(n_estimators=33, n_jobs=-1, random_state=42)
-
-clf3 = VotingClassifier(estimators=[('mlp', clf1), ('rf', clf2)],
-                         voting='hard')
-eclf1 = clf1.fit(X_train, Y_train)
 eclf2 = clf2.fit(X_train, Y_train)
-eclf3 = clf3.fit(X_train, Y_train)
-
-Y_pred1 = eclf1.predict(X_test)
-af.quadratic_weighted_kappa(Y_test, Y_pred1)
-
 Y_pred2 = eclf2.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred2)
 
+clf3 = VotingClassifier(estimators=[('mlp', clf1), ('rf', clf2)],
+                        voting='hard')
+eclf3 = clf3.fit(X_train, Y_train)
 Y_pred3 = eclf3.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred3)
 
