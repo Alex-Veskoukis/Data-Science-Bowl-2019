@@ -11,10 +11,11 @@ import os
 # =============================================================================
 import pandas as pd
 import numpy as np
+import datetime as dt
+import auxiliary_functions as af
 
 train = pd.read_csv('Data/train.csv')
 test = pd.read_csv('Data/test.csv')
-# =============================================================================
 train_labels = pd.read_csv('Data/train_labels.csv')
 
 
@@ -25,8 +26,6 @@ specs = pd.read_csv('Data/specs.csv')
 # train = train[train.installation_id.isin(Unique_Installations[1:10])]
 
 def create_features(data):
-    import pandas as pd
-    import numpy as np
     trainTitles = data['title'].unique()
     trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
     AttemptIndicator = (data.type == 'Assessment') & \
@@ -122,7 +121,7 @@ def create_features(data):
     Assessments['timestamp'] = pd.to_datetime(Assessments['timestamp'], format="%Y-%m-%d %H:%M")
     Assessments = Assessments.sort_values('timestamp', ascending=True)
     Assessments = Assessments.drop_duplicates()
-    Assessments = convert_datetime(Assessments)
+    Assessments = af.convert_datetime(Assessments)
     Assessments['time'] = Assessments['timestamp'].dt.strftime('%H:%M')
     Assessments['date'] = Assessments['timestamp'].dt.date
     del Assessments['timestamp']
@@ -238,6 +237,8 @@ Test_set = get_test_set_accuracy(test)
 Test_set_full = pd.merge(Test_Features, Test_set.loc[:, ~ Test_set.columns.isin(['accuracy'])],
                          on=['installation_id', 'game_session'], how='inner')
 
+
+# Create Test and Control sets
 X_train = FinalTrain.loc[:,
           ~FinalTrain.columns.isin(['accuracy_group', 'installation_id', 'game_session', 'PartOfDay'])]
 Y_train = FinalTrain['accuracy_group'].astype(int)
@@ -246,28 +247,20 @@ X_test = Test_set_full.loc[:, ~Test_Features.columns.isin(['accuracy_group', 'in
 Y_test = Test_set_full['accuracy_group'].to_numpy(dtype=int)
 
 
+# Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
 
-# Instantiate model with 1000 decision trees
-
-
-rf =RandomForestClassifier(n_estimators =  33, n_jobs=-1)
-
-# rf =RandomForestRegressor(n_estimators =  5, max_features = 'sqrt')
-#n_estimators=50 ,  random_state=42 , max_features = 'auto', bootstrap=True, criterion = 'mae'
-# Train the model on training data
+rf = RandomForestClassifier(n_estimators = 83, n_jobs=-1, random_state=42)
 rf.fit(X_train, Y_train)
-
 Y_pred = rf.predict(X_test)
-
-quadratic_weighted_kappa(Y_test, Y_pred)
-
+af.quadratic_weighted_kappa(Y_test, Y_pred)
 
 
 
 
 
-n_estimators = range(1,100,1)
+# Tune rf
+n_estimators = range(1,100)
 train_results = []
 test_results = []
 for estimator in n_estimators:
@@ -275,8 +268,8 @@ for estimator in n_estimators:
    rf.fit(X_train, Y_train)
    train_pred = rf.predict(X_train)
    y_pred = rf.predict(X_test)
-   test_results.append(quadratic_weighted_kappa(Y_test, y_pred))
-   train_results.append(quadratic_weighted_kappa(Y_train, train_pred))
+   test_results.append(af.quadratic_weighted_kappa(Y_test, y_pred))
+   train_results.append(af.quadratic_weighted_kappa(Y_train, train_pred))
 
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerLine2D
@@ -302,11 +295,3 @@ plt.close()
 #
 # print(gs_random.best_params_)
 #
-#
-# SPACE = [skopt.space.Real(0.01, 0.5, name='learning_rate', prior='log-uniform'),
-#          skopt.space.Integer(1, 30, name='max_depth'),
-#          skopt.space.Integer(2, 100, name='num_leaves'),
-#          skopt.space.Integer(10, 1000, name='min_data_in_leaf'),
-#          skopt.space.Real(0.1, 1.0, name='feature_fraction', prior='uniform'),
-#          skopt.space.Real(0.1, 1.0, name='subsample', prior='uniform'),
-#          ]

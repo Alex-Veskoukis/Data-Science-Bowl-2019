@@ -1,7 +1,6 @@
-
-
 def compare_shapes(x, y):
     print(x.shape[1] == y.shape[1])
+
 
 def confusion_matrix(rater_a, rater_b, min_rating=None, max_rating=None):
     """
@@ -84,14 +83,14 @@ def quadratic_weighted_kappa(rater_a, rater_b, min_rating=None, max_rating=None)
 
 def self_proportion_plot(data, col):
     import matplotlib.pyplot as plt
-    nrows =  len(data[col])
-    proportions = data[col].value_counts()/nrows
+    nrows = len(data[col])
+    proportions = data[col].value_counts() / nrows
     proportions = proportions.to_frame()
     proportions = proportions.reset_index()
     proportions = proportions.rename(columns={"index": "Group"})
 
     # Reorder it following the values:
-    ordered_proportions = proportions.sort_values(ascending= True , by=col)
+    ordered_proportions = proportions.sort_values(ascending=True, by=col)
     my_range = range(1, len(proportions) + 1)
     plt.hlines(y=my_range, xmin=0, xmax=ordered_proportions[col], color='black')
     plt.plot(ordered_proportions[col], my_range, "o", ms=7)
@@ -101,7 +100,9 @@ def self_proportion_plot(data, col):
     plt.ylabel('Group')
     plt.show()
 
+
 def convert_datetime(df):
+    import pandas as pd
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['date'] = df['timestamp'].dt.date
     df['month'] = df['timestamp'].dt.month
