@@ -251,7 +251,7 @@ from sklearn.ensemble import RandomForestClassifier
 # Instantiate model with 1000 decision trees
 
 
-rf =RandomForestClassifier(n_estimators =  43, n_jobs=-1)
+rf =RandomForestClassifier(n_estimators =  33, n_jobs=-1)
 
 # rf =RandomForestRegressor(n_estimators =  5, max_features = 'sqrt')
 #n_estimators=50 ,  random_state=42 , max_features = 'auto', bootstrap=True, criterion = 'mae'
@@ -271,7 +271,7 @@ n_estimators = range(1,100,1)
 train_results = []
 test_results = []
 for estimator in n_estimators:
-   rf = RandomForestClassifier(n_estimators=estimator, n_jobs=-1)
+   rf = RandomForestClassifier(n_estimators=estimator, n_jobs=-1, random_state=42)
    rf.fit(X_train, Y_train)
    train_pred = rf.predict(X_train)
    y_pred = rf.predict(X_test)
@@ -283,7 +283,7 @@ from matplotlib.legend_handler import HandlerLine2D
 line1, = plt.plot(n_estimators, train_results, 'b', label='Train kappa')
 line2, = plt.plot(n_estimators, test_results, 'r', label='Test kappa')
 plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
-plt.ylabel('AUC score')
+plt.ylabel('Kappa score')
 plt.xlabel('n_estimators')
 plt.show()
 plt.close()
