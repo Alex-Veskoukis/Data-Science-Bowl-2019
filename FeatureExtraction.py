@@ -4,26 +4,18 @@ Created on Fri Nov 22 10:20:53 2019
 @author: uocvc
 """
 
-# =============================================================================
 import os
 # directory = 'C:/Users/Alex/Desktop/data-science-bowl-2019/Data'
 # os.chdir(directory)
-# =============================================================================
 import pandas as pd
 import numpy as np
-import datetime as dt
 import auxiliary_functions as af
 
 train = pd.read_csv('Data/train.csv')
 test = pd.read_csv('Data/test.csv')
 train_labels = pd.read_csv('Data/train_labels.csv')
-
-
 specs = pd.read_csv('Data/specs.csv')
-# =============================================================================
-#
-# Unique_Installations = train.installation_id.unique()
-# train = train[train.installation_id.isin(Unique_Installations[1:10])]
+
 
 def create_features(data):
     trainTitles = data['title'].unique()
@@ -146,42 +138,7 @@ def create_features(data):
     return FinalData
 
 
-    # To Test
-    # specs_unsplit = pd.DataFrame()
-    # import json
-    # for i in range(0, data.shape[0]):
-    #     for j in json.loads(data.event_data[i]):
-    #         new_df = pd.DataFrame({'event_id': data['event_data'][i]}, index=[i])
-    #         specs_unsplit = specs_unsplit.append(new_df)
-    #
-    # from sklearn.feature_extraction.text import CountVectorizer
-    #
-    # vec = CountVectorizer()
-    # sample = specs_unsplit['info']
-    # X = vec.fit_transform(sample)
-    # terms_count = pd.DataFrame(X.toarray(), columns=vec.get_feature_names())
-    #
-    # from sklearn.decomposition import PCA
-    # model = PCA(n_components=5)
-    # model.fit(terms_count)
-    # X_5D = model.transform(terms_count)
-    #
-    # reduced_terms = pd.DataFrame()
-    # reduced_terms['PCA1'] = X_5D[:, 0]
-    # reduced_terms['PCA2'] = X_5D[:, 1]
-    # reduced_terms['PCA3'] = X_5D[:, 2]
-    # reduced_terms['PCA4'] = X_5D[:, 3]
-    # reduced_terms['PCA5'] = X_5D[:, 4]
-    #
-    # # reduced_terms = pd.concat([reduced_terms.reset_index(drop=True),
-    # #                            specs_unsplit[['event_id']].reset_index(drop=True)], axis=1)
-    # # reduced_terms = reduced_terms.groupby('event_id')['PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5'].mean().reset_index()
-    # # # merge specs to train and test data
-    # data_spec = pd.merge(data[['installation_id', 'game_session','event_id']], reduced_terms, on='event_id', how='inner')
-    # data_compon = data_spec.groupby(['installation_id', 'game_session'])[
-    #     'PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5'].mean().reset_index()
-    # FinalData = pd.merge(FinalData, data_compon, how='inner',
-    #                      on=['installation_id', 'game_session'])
+
 Final = create_features(train)
 
 FinalTrain = pd.merge(Final,
@@ -258,6 +215,26 @@ af.quadratic_weighted_kappa(Y_test, Y_pred)
 
 
 
+# importance
+importances = rf.feature_importances_
+from sklearn import metrics
+from sklearn.ensemble import ExtraTreesClassifier
+# load the iris datasets
+# fit an Extra Trees model to the data
+model = ExtraTreesClassifier()
+model.fit(X_train, Y_train)
+# display the relative importance of each attribute
+print(model.feature_importances_)
+
+
+# RFE
+from sklearn.feature_selection import RFE
+rfe = RFE(rf, 10)
+rfe = rfe.fit(X_train, Y_train)
+# summarize the selection of the attributes
+print(rfe.support_)
+print(rfe.ranking_)
+
 
 # Tune rf
 n_estimators = range(1,100)
@@ -294,4 +271,55 @@ plt.close()
 # gs_random.fit(X_train, Y_train)
 #
 # print(gs_random.best_params_)
+
+
+# voting classifiers
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+clf1 = MLPClassifier(solver='lbfgs', alpha=1e-5,
+             hidden_layer_sizes=(5, 2), random_state=42)
+clf2 = RandomForestClassifier(n_estimators =  33, n_jobs=-1 ,random_state=42)
+eclf1 = VotingClassifier(estimators=[('mlp', clf1),('rf', clf2) ],
+                         voting='hard')
+eclf1 = eclf1.fit(X_train, Y_train)
+
+Y_pred = eclf1.predict(X_test)
+
+quadratic_weighted_kappa(Y_test, Y_pred)
+
+# To Test
+# specs_unsplit = pd.DataFrame()
+# import json
+# for i in range(0, data.shape[0]):
+#     for j in json.loads(data.event_data[i]):
+#         new_df = pd.DataFrame({'event_id': data['event_data'][i]}, index=[i])
+#         specs_unsplit = specs_unsplit.append(new_df)
 #
+# from sklearn.feature_extraction.text import CountVectorizer
+#
+# vec = CountVectorizer()
+# sample = specs_unsplit['info']
+# X = vec.fit_transform(sample)
+# terms_count = pd.DataFrame(X.toarray(), columns=vec.get_feature_names())
+#
+# from sklearn.decomposition import PCA
+# model = PCA(n_components=5)
+# model.fit(terms_count)
+# X_5D = model.transform(terms_count)
+#
+# reduced_terms = pd.DataFrame()
+# reduced_terms['PCA1'] = X_5D[:, 0]
+# reduced_terms['PCA2'] = X_5D[:, 1]
+# reduced_terms['PCA3'] = X_5D[:, 2]
+# reduced_terms['PCA4'] = X_5D[:, 3]
+# reduced_terms['PCA5'] = X_5D[:, 4]
+#
+# # reduced_terms = pd.concat([reduced_terms.reset_index(drop=True),
+# #                            specs_unsplit[['event_id']].reset_index(drop=True)], axis=1)
+# # reduced_terms = reduced_terms.groupby('event_id')['PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5'].mean().reset_index()
+# # # merge specs to train and test data
+# data_spec = pd.merge(data[['installation_id', 'game_session','event_id']], reduced_terms, on='event_id', how='inner')
+# data_compon = data_spec.groupby(['installation_id', 'game_session'])[
+#     'PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5'].mean().reset_index()
+# FinalData = pd.merge(FinalData, data_compon, how='inner',
+#                      on=['installation_id', 'game_session'])
