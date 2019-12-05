@@ -280,8 +280,8 @@ for estimator in n_estimators:
 
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerLine2D
-line1, = plt.plot(n_estimators, train_results, 'b', label='Train AUC')
-line2, = plt.plot(n_estimators, test_results, 'r', label='Test AUC')
+line1, = plt.plot(n_estimators, train_results, 'b', label='Train kappa')
+line2, = plt.plot(n_estimators, test_results, 'r', label='Test kappa')
 plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
 plt.ylabel('AUC score')
 plt.xlabel('n_estimators')
