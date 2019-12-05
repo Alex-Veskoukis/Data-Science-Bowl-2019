@@ -40,9 +40,9 @@ af.quadratic_weighted_kappa(Y_test, Y_pred)
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm, tree
-import xgboost
+import xgboost as xgb
 classifiers = []
-model1 = xgboost.XGBClassifier()
+model1 = xgb.XGBClassifier()
 classifiers.append(model1)
 model2 = svm.SVC()
 classifiers.append(model2)
@@ -53,14 +53,14 @@ classifiers.append(model4)
 
 
 for clf in classifiers:
-    clf.fit(X_train, y_train)
-    y_pred= clf.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
+    clf.fit(X_train, Y_train)
+    Y_pred= clf.predict(X_test)
+    acc = accuracy_score(Y_test, Y_pred)
     print("Accuracy of %s is %s"%(clf, acc))
-    cm = confusion_matrix(y_test, y_pred)
-    print("Confusion Matrix of %s is %s"%(clf, cm)
-    kappa = quadratic_weighted_kappa(y_test, y_pred)
-    print("Confusion Matrix of %s is %s"%(clf, kappa)
+    cm = confusion_matrix(Y_test, Y_pred)
+    print("Confusion Matrix of %s is %s"%(clf, cm))
+    kappa = af.quadratic_weighted_kappa(Y_test, Y_pred)
+    print("Confusion Matrix of %s is %s"%(clf, kappa))
 
 # Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
@@ -147,3 +147,15 @@ clf3 = VotingClassifier(estimators=[('mlp', clf1), ('rf', clf2)],
 eclf3 = clf3.fit(X_train, Y_train)
 Y_pred3 = eclf3.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred3)
+
+from sklearn.metrics import confusion_matrix
+import seaborn as sns;sns.set()
+
+mat = confusion_matrix(Y_pred, Y_test)
+sns.heatmap(mat, square=True, annot=True, cbar=False)
+plt.xlabel('predicted values')
+plt.ylabel('true value');
+
+af.mat(X_train, Y_train)
+
+X_train.to_numpy
