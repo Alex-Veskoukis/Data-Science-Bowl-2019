@@ -292,35 +292,59 @@ from sklearn.ensemble import RandomForestClassifier
 # Instantiate model with 1000 decision trees
 
 
-rf =RandomForestClassifier()
+rf =RandomForestClassifier(n_estimators =  43, n_jobs=-1)
 
 # rf =RandomForestRegressor(n_estimators =  5, max_features = 'sqrt')
 #n_estimators=50 ,  random_state=42 , max_features = 'auto', bootstrap=True, criterion = 'mae'
 # Train the model on training data
 rf.fit(X_train, Y_train)
 
-Y_pred = (rf.predict(X_test))
+Y_pred = rf.predict(X_test)
 
 quadratic_weighted_kappa(Y_test, Y_pred)
 
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import  make_scorer
-rf_params = {
-    'n_estimators': range(5,100),
-    'max_features': ['auto', 'sqrt', 'log2'],
-}
-
-gs_random = RandomizedSearchCV(estimator=rf, param_distributions=rf_params, cv= 5, n_iter=60, scoring=make_scorer(quadratic_weighted_kappa, greater_is_better=True))
-
-gs_random.fit(X_train, Y_train)
-
-print(gs_random.best_params_)
 
 
-SPACE = [skopt.space.Real(0.01, 0.5, name='learning_rate', prior='log-uniform'),
-         skopt.space.Integer(1, 30, name='max_depth'),
-         skopt.space.Integer(2, 100, name='num_leaves'),
-         skopt.space.Integer(10, 1000, name='min_data_in_leaf'),
-         skopt.space.Real(0.1, 1.0, name='feature_fraction', prior='uniform'),
-         skopt.space.Real(0.1, 1.0, name='subsample', prior='uniform'),
-         ]
+
+
+
+n_estimators = range(1,100,1)
+train_results = []
+test_results = []
+for estimator in n_estimators:
+   rf = RandomForestClassifier(n_estimators=estimator, n_jobs=-1)
+   rf.fit(X_train, Y_train)
+   train_pred = rf.predict(X_train)
+   y_pred = rf.predict(X_test)
+   test_results.append(quadratic_weighted_kappa(Y_test, y_pred))
+   train_results.append(quadratic_weighted_kappa(Y_train, train_pred))
+
+import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerLine2D
+line1, = plt.plot(n_estimators, train_results, 'b', label='Train AUC')
+line2, = plt.plot(n_estimators, test_results, 'r', label='Test AUC')
+plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
+plt.ylabel('AUC score')
+plt.xlabel('n_estimators')
+plt.show()
+# from sklearn.model_selection import RandomizedSearchCV
+# from sklearn.metrics import  make_scorer
+# rf_params = {
+#     'n_estimators': range(5,100),
+#     'max_features': ['auto', 'sqrt', 'log2'],
+# }
+#
+# gs_random = RandomizedSearchCV(estimator=rf, param_distributions=rf_params, cv= 5, n_iter=60, scoring=make_scorer(quadratic_weighted_kappa, greater_is_better=True))
+#
+# gs_random.fit(X_train, Y_train)
+#
+# print(gs_random.best_params_)
+#
+#
+# SPACE = [skopt.space.Real(0.01, 0.5, name='learning_rate', prior='log-uniform'),
+#          skopt.space.Integer(1, 30, name='max_depth'),
+#          skopt.space.Integer(2, 100, name='num_leaves'),
+#          skopt.space.Integer(10, 1000, name='min_data_in_leaf'),
+#          skopt.space.Real(0.1, 1.0, name='feature_fraction', prior='uniform'),
+#          skopt.space.Real(0.1, 1.0, name='subsample', prior='uniform'),
+#          ]
