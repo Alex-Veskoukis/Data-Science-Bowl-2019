@@ -14,7 +14,7 @@ from sklearn.base import clone
 
 
 from sklearn.tree import DecisionTreeClassifier
-clf = OrdinalClassifier(DecisionTreeClassifier(max_depth=3))
+clf = af.OrdinalClassifier(DecisionTreeClassifier(max_depth=3))
 
 clf.fit(X_train, Y_train)
 Y_pred = clf.predict(X_test)
@@ -28,39 +28,46 @@ af.quadratic_weighted_kappa(Y_test, Y_pred)
 
 
 
-from sklearn.linear_model import LogisticRegression
-clf3 = OrdinalClassifier(LogisticRegression())
-clf3.fit(X_train, Y_train)
-Y_pred = clf3.predict(X_test)
-af.quadratic_weighted_kappa(Y_test, Y_pred)
 
 
-
-
+from sklearn.base import clone
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from mlxtend.classifier import EnsembleVoteClassifier
 from sklearn import svm, tree
 import xgboost as xgb
 classifiers = []
+
 model1 = xgb.XGBClassifier()
 classifiers.append(model1)
-model2 = svm.SVC()
+
+model2 = af.OrdinalClassifier(xgb.XGBClassifier())
 classifiers.append(model2)
-model3 = tree.DecisionTreeClassifier()
+
+model3 = RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42)
 classifiers.append(model3)
-model4 = RandomForestClassifier()
+
+model4 = af.OrdinalClassifier(RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42))
 classifiers.append(model4)
 
 
+model5 = EnsembleVoteClassifier(clfs=[model1,  model3], weights=[1,1], refit=False)
+classifiers.append(model5)
+
+model6 = EnsembleVoteClassifier(clfs=[model1, model2, model3, model4], weights=[1,1,1,1], refit=False)
+classifiers.append(model6)
+
+
+
+
+kappa = []
 for clf in classifiers:
+    print(clf)
     clf.fit(X_train, Y_train)
-    Y_pred= clf.predict(X_test)
-    acc = accuracy_score(Y_test, Y_pred)
-    print("Accuracy of %s is %s"%(clf, acc))
-    cm = confusion_matrix(Y_test, Y_pred)
-    print("Confusion Matrix of %s is %s"%(clf, cm))
-    kappa = af.quadratic_weighted_kappa(Y_test, Y_pred)
-    print("Confusion Matrix of %s is %s"%(clf, kappa))
+    Y_pred = clf.predict(X_test)
+    kappa.append(af.quadratic_weighted_kappa(Y_test, Y_pred))
 
 # Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
@@ -97,11 +104,11 @@ train_results = []
 test_results = []
 for estimator in n_estimators:
     rf = RandomForestClassifier(n_estimators=estimator, n_jobs=-1, random_state=42)
-rf.fit(X_train, Y_train)
-train_pred = rf.predict(X_train)
-y_pred = rf.predict(X_test)
-test_results.append(af.quadratic_weighted_kappa(Y_test, y_pred))
-train_results.append(af.quadratic_weighted_kappa(Y_train, train_pred))
+    rf.fit(X_train, Y_train)
+    train_pred = rf.predict(X_train)
+    y_pred = rf.predict(X_test)
+    test_results.append(af.quadratic_weighted_kappa(Y_test, y_pred))
+    train_results.append(af.quadratic_weighted_kappa(Y_train, train_pred))
 
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerLine2D

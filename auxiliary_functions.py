@@ -163,6 +163,7 @@ class OrdinalClassifier():
                 # V1 = 1 - Pr(y > V1)
                 predicted.append(1 - clfs_predict[y][:, 1])
             elif y in clfs_predict:
+
                 # Vi = Pr(y > Vi-1) - Pr(y > Vi)
                 predicted.append(clfs_predict[y - 1][:, 1] - clfs_predict[y][:, 1])
             else:
@@ -172,3 +173,24 @@ class OrdinalClassifier():
 
     def predict(self, X):
         return np.argmax(self.predict_proba(X), axis=1)
+
+
+
+import numpy as np
+
+class VotingClassifier(object):
+    """ Implements a voting classifier for pre-trained classifiers"""
+
+    def __init__(self, estimators):
+        self.estimators = estimators
+
+    def predict(self, X):
+        # get values
+        Y = np.zeros([X.shape[0], len(self.estimators)], dtype=int)
+        for i, clf in enumerate(self.estimators):
+            Y[:, i] = clf.predict(X)
+        # apply voting
+        y = np.zeros(X.shape[0])
+        for i in range(X.shape[0]):
+            y[i] = np.argmax(np.bincount(Y[i,:]))
+        return y
