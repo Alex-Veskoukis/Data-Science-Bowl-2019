@@ -1,30 +1,9 @@
-import pandas as pd
-import numpy as np
 import auxiliary_functions as af
-
-X_train = pd.read_csv('Train_Test/X_train.csv')
-X_test = pd.read_csv('Train_Test/X_test.csv')
-Y_train = pd.read_csv('Train_Test/Y_train.csv')
-Y_train = Y_train['accuracy_group'].to_numpy()
-Y_test = pd.read_csv('Train_Test/Y_test.csv')
-Y_test = Y_test['accuracy_group'].to_numpy()
-
-from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
-
-clf2 = af.OrdinalClassifier(RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42))
-clf2.fit(X_train, Y_train)
-Y_pred = clf2.predict(X_test)
-af.quadratic_weighted_kappa(Y_test, Y_pred)
-
-from sklearn.base import clone
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from mlxtend.classifier import EnsembleVoteClassifier
-from sklearn import svm, tree
 import xgboost as xgb
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
 classifiers = []
 
@@ -139,8 +118,7 @@ eclf3 = clf3.fit(X_train, Y_train)
 Y_pred3 = eclf3.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred3)
 
-from sklearn.metrics import confusion_matrix
-import seaborn as sns;
+
 
 sns.set()
 

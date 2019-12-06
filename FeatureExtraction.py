@@ -73,16 +73,30 @@ def create_features(data):
                                                   'game_session',
                                                   'Assessment_Session_Time',
                                                   'Assessment_NumberOfEvents']].drop_duplicates()
-
+    slice3['Past_Assessment_Session_Time'] = slice3['Assessment_Session_Time'].shift(1, fill_value=0)
+    slice3['Past_Assessment_NumberOfEvents'] = slice3['Assessment_Session_Time'].shift(1, fill_value=0)
     # Slice 4
-    Event_and_Attempts = data.copy()[['installation_id','game_session','type', 'event_count', 'event_code','Attempt', 'game_time']]
+    Cols = ['installation_id','game_session','type', 'event_count', 'event_code','Attempt', 'game_time']
+    Event_and_Attempts = data.copy()[Cols]
     Event_and_Attempts = Event_and_Attempts[Event_and_Attempts['type'] == 'Assessment']
-    Event_and_Attempts['Num_Of_Events_Till_Attempt'] = Event_and_Attempts.loc[Event_and_Attempts.Attempt == 1,'event_count']
-    Event_and_Attempts['Num_Of_Events_Till_Attempt'] = Event_and_Attempts['Num_Of_Events_Till_Attempt'].replace(np.nan, 0)
-    Event_and_Attempts['Time_past_Till_Attempt'] = Event_and_Attempts.loc[Event_and_Attempts.Attempt == 1, 'game_time']
+    Event_and_Attempts['Num_Of_Events_Till_Attempt'] = Event_and_Attempts.loc[Event_and_Attempts.Attempt == 1,
+                                                                              'event_count']
+    Event_and_Attempts['Num_Of_Events_Till_Attempt'] = Event_and_Attempts['Num_Of_Events_Till_Attempt'].\
+        replace(np.nan, 0)
+    Event_and_Attempts['Time_past_Till_Attempt'] = Event_and_Attempts.loc[Event_and_Attempts.Attempt == 1,
+                                                                          'game_time']
     Event_and_Attempts['Time_past_Till_Attempt'] = Event_and_Attempts['Time_past_Till_Attempt'].replace(np.nan,0)
-    Event_and_Attempts = Event_and_Attempts.groupby(['installation_id','game_session'])['Num_Of_Events_Till_Attempt', 'Time_past_Till_Attempt'].max()
+    Event_and_Attempts = Event_and_Attempts.groupby(['installation_id','game_session'])['Num_Of_Events_Till_Attempt',
+                                                                                        'Time_past_Till_Attempt'].max()
     Event_and_Attempts = Event_and_Attempts.reset_index()
+    Event_and_Attempts['Prev_Assessment_Time_past_Till_Attempt'] = Event_and_Attempts['Time_past_Till_Attempt'].\
+        shift(1, fill_value=0)
+    Event_and_Attempts['Prev_Assessment_Num_Of_Events_Till_Attempt'] = Event_and_Attempts['Num_Of_Events_Till_Attempt'].\
+        shift(1,fill_value=0)
+    Event_and_Attempts = Event_and_Attempts[['installation_id',
+                                             'game_session',
+                                             'Prev_Assessment_Time_past_Till_Attempt',
+                                             'Prev_Assessment_Num_Of_Events_Till_Attempt']]
     # Slice 1 / Type frequency Experience Measures
     type_slice = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
                                 index=['installation_id', 'game_session', 'Game_Session_Order'],

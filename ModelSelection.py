@@ -5,7 +5,8 @@ import shap
 from auxiliary_functions import *
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-import seaborn as sns;sns.set()
+import seaborn as sns
+sns.set()
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
@@ -23,7 +24,7 @@ Y_test = Y_test['accuracy_group'].to_numpy()
 rf = RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42)
 rf.fit(X_train, Y_train)
 Y_pred = rf.predict(X_test)
-quadratic_weighted_kappa(Y_test, Y_pred)
+af.quadratic_weighted_kappa(Y_test, Y_pred)
 
 # confusion matrix
 mat = confusion_matrix(Y_pred, Y_test)
