@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 import auxiliary_functions as af
 
-X_train = pd.read_csv('Data/X_train.csv')
-X_test = pd.read_csv('Data/X_test.csv')
-Y_train = pd.read_csv('Data/Y_train.csv')
+X_train = pd.read_csv('Train_Test/X_train.csv')
+X_test = pd.read_csv('Train_Test/X_test.csv')
+Y_train = pd.read_csv('Train_Test/Y_train.csv')
 Y_train = Y_train['accuracy_group'].to_numpy()
-Y_test = pd.read_csv('Data/Y_test.csv')
+Y_test = pd.read_csv('Train_Test/Y_test.csv')
 Y_test = Y_test['accuracy_group'].to_numpy()
 
 from sklearn.base import clone
