@@ -29,14 +29,13 @@ def create_features(data):
     data['IsAttemptSuccessful'] = 0
     data.loc[SuccessfulAttemptIndicator, 'IsAttemptSuccessful'] = 1
     data['timestamp'] = pd.to_datetime(data['timestamp'], format="%Y-%m-%d %H:%M")
+    data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
     Inst_Group = data.groupby('installation_id')
     Inst_Game_Group = data.groupby(['installation_id', 'game_session'])
     data['Total_Game_Session_Time'] = Inst_Game_Group['game_time'].transform(np.max)
     data['Total_Game_Session_Events'] = Inst_Game_Group['event_count'].transform(np.max)
     data['Assessments_played_Counter'] = data[data.type == 'Assessment'].groupby('installation_id')[
-        'game_session'].transform(
-        lambda x: np.round(pd.factorize(x)[0] + 1))
-    data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
+        'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
     data['Cumulative_Attempts'] = Inst_Group['Attempt'].transform(np.cumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
 
@@ -74,6 +73,16 @@ def create_features(data):
                                                   'game_session',
                                                   'Assessment_Session_Time',
                                                   'Assessment_NumberOfEvents']].drop_duplicates()
+
+    # Slice 4
+    Event_and_Attempts = data.copy()[['installation_id','game_session','type', 'event_count', 'event_code','Attempt', 'game_time']]
+    Event_and_Attempts = Event_and_Attempts[Event_and_Attempts['type'] == 'Assessment']
+    Event_and_Attempts['Num_Of_Events_Till_Attempt'] = Event_and_Attempts.loc[Event_and_Attempts.Attempt == 1,'event_count']
+    Event_and_Attempts['Num_Of_Events_Till_Attempt'] = Event_and_Attempts['Num_Of_Events_Till_Attempt'].replace(np.nan, 0)
+    Event_and_Attempts['Time_past_Till_Attempt'] = Event_and_Attempts.loc[Event_and_Attempts.Attempt == 1, 'game_time']
+    Event_and_Attempts['Time_past_Till_Attempt'] = Event_and_Attempts['Time_past_Till_Attempt'].replace(np.nan,0)
+    Event_and_Attempts = Event_and_Attempts.groupby(['installation_id','game_session'])['Num_Of_Events_Till_Attempt', 'Time_past_Till_Attempt'].max()
+    Event_and_Attempts = Event_and_Attempts.reset_index()
     # Slice 1 / Type frequency Experience Measures
     type_slice = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
                                 index=['installation_id', 'game_session', 'Game_Session_Order'],
@@ -144,6 +153,8 @@ def create_features(data):
     FinalData = pd.merge(FinalData, slice3, how='inner',
                          on=['installation_id', 'game_session'])
     del FinalData['Game_Session_Order']
+    FinalData = pd.merge(FinalData, Event_and_Attempts, how='inner',
+                         on=['installation_id', 'game_session'])
     return FinalData
 
 
@@ -246,3 +257,36 @@ Y_test = Test_set_full['accuracy_group'].to_numpy(dtype=int)
 #     'PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5'].mean().reset_index()
 # FinalData = pd.merge(FinalData, data_compon, how='inner',
 #                      on=['installation_id', 'game_session'])
+
+
+[1: 28
+PM] Perpinias, Nikos
+
+import pandas as pd
+import numpy as np
+import json
+
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
+train = pd.read_csv('./train.csv', nrows=50000)
+Assesment = train[train['type'] == 'Assessment']
+Assesment.loc[:, 'Attempt'] = 0
+AssesmentTitles = Assesment['title'].unique()
+AssesmentTitles_sub = [item for item in AssesmentTitles if item not in ['Bird Measurer (Assessment)']]
+Assesment.loc[Assesment['event_code'].isin([4100]) & Assesment.title.isin(AssesmentTitles_sub), 'Attempt'] = 1
+Assesment.loc[
+    Assesment['event_code'].isin([4110]) & Assesment.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
+Assesment.loc[Assesment['event_data'].str.contains('false') & Assesment['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
+Assesment.loc[Assesment['event_data'].str.contains('true') & Assesment['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
+probPerAssesment = pd.Series(
+    Assesment.groupby('title')['IsAttemptSuccessful'].sum() / Assesment.groupby('title')['Attempt'].sum(),
+    name='success')
+Assesment = pd.merge(Assesment, probPerAssesment, how='left', on='title')
+Assesment = pd.merge(Assesment,
+                     pd.Series(Assesment.groupby(['installation_id', 'game_session', 'title']).Attempt.sum(), name='k'),
+                     on=['installation_id', 'game_session', 'title'], how='left')
+Assesment['BernouliProb'] = Assesment.apply(lambda x: 1 - (1 - x['success']) ** x['k'], axis=1)
+test = Assesment[['BernouliProb', 'installation_id']].drop_duplicates()
+
+

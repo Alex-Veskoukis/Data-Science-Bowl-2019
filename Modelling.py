@@ -10,25 +10,12 @@ Y_test = pd.read_csv('Train_Test/Y_test.csv')
 Y_test = Y_test['accuracy_group'].to_numpy()
 
 from sklearn.base import clone
-
-
-
-from sklearn.tree import DecisionTreeClassifier
-clf = af.OrdinalClassifier(DecisionTreeClassifier(max_depth=3))
-
-clf.fit(X_train, Y_train)
-Y_pred = clf.predict(X_test)
-af.quadratic_weighted_kappa(Y_test, Y_pred)
-
 from sklearn.ensemble import RandomForestClassifier
+
 clf2 = af.OrdinalClassifier(RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42))
 clf2.fit(X_train, Y_train)
 Y_pred = clf2.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred)
-
-
-
-
 
 from sklearn.base import clone
 from sklearn.metrics import accuracy_score, confusion_matrix
@@ -38,6 +25,7 @@ from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from mlxtend.classifier import EnsembleVoteClassifier
 from sklearn import svm, tree
 import xgboost as xgb
+
 classifiers = []
 
 model1 = xgb.XGBClassifier()
@@ -52,15 +40,11 @@ classifiers.append(model3)
 model4 = af.OrdinalClassifier(RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42))
 classifiers.append(model4)
 
-
-model5 = EnsembleVoteClassifier(clfs=[model1,  model3], weights=[1,1], refit=False)
+model5 = EnsembleVoteClassifier(clfs=[model1, model3], weights=[1, 1], refit=False)
 classifiers.append(model5)
 
-model6 = EnsembleVoteClassifier(clfs=[model1, model2, model3, model4], weights=[1,1,1,1], refit=False)
+model6 = EnsembleVoteClassifier(clfs=[model1, model2, model3, model4], weights=[1, 1, 1, 1], refit=False)
 classifiers.append(model6)
-
-
-
 
 kappa = []
 for clf in classifiers:
@@ -156,7 +140,9 @@ Y_pred3 = eclf3.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred3)
 
 from sklearn.metrics import confusion_matrix
-import seaborn as sns;sns.set()
+import seaborn as sns;
+
+sns.set()
 
 mat = confusion_matrix(Y_pred, Y_test)
 sns.heatmap(mat, square=True, annot=True, cbar=False)
