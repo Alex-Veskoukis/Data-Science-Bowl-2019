@@ -22,7 +22,7 @@ classifiers.append(model4)
 model5 = EnsembleVoteClassifier(clfs=[model1, model3], weights=[1, 1], refit=False)
 classifiers.append(model5)
 
-model6 = EnsembleVoteClassifier(clfs=[model1, model2, model3, model4], weights=[1, 1, 1, 1], refit=False)
+model6 = EnsembleVoteClassifier(clfs=[model2,  model4], weights=[1, 1], refit=False)
 classifiers.append(model6)
 
 kappa = []

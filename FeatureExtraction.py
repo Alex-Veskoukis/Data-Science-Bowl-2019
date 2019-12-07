@@ -106,7 +106,7 @@ def create_features(data):
     type_slice['Past_Activities'] = type_slice.groupby('installation_id')['Activity'].transform(np.cumsum)
     type_slice['Past_Games'] = type_slice.groupby('installation_id')['Game'].transform(np.cumsum)
     type_slice['Past_Clips'] = type_slice.groupby('installation_id')['Clip'].transform(np.cumsum)
-    type_slice['Past_Assessments'] = type_slice.groupby('installation_id')['Assessment'].transform(np.cumsum)
+    type_slice['Past_Assessments'] = type_slice.groupby('installation_id')['Assessment'].transform(np.cumsum) - 1
     type_slice_assessments = type_slice[type_slice.Assessment == 1]
     type_slice_assessments = type_slice_assessments.rename(columns={'Game_Session_Order': 'Total_Game_Sessions'})
     type_slice_assessments = type_slice_assessments.drop(['Game', 'Clip', 'Assessment', 'Activity'], axis=1)
@@ -138,6 +138,44 @@ def create_features(data):
                                'Time_spent_on_Games', 'Time_spent_on_Clips',
                                'Time_spent_on_Assessments']].drop_duplicates()
 
+    # Slice 1 / world time spent Experience Measures
+    world_slice3 = pd.pivot_table(
+        slice1[['installation_id', 'game_session', 'world', 'Game_Session_Order','type', 'Total_Game_Session_Time']],
+        index=['installation_id', 'game_session', 'type','Game_Session_Order'],
+        columns='world',
+        values='Total_Game_Session_Time',
+        aggfunc=sum,
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+    world_slice3['Time_spent_in_CRYSTALCAVES'] = world_slice3.groupby('installation_id')['CRYSTALCAVES'].transform(np.cumsum)
+    world_slice3['Time_spent_in_MAGMAPEAK'] = world_slice3.groupby('installation_id')['MAGMAPEAK'].transform(np.cumsum)
+    world_slice3['Time_spent_in_TREETOPCITY'] = world_slice3.groupby('installation_id')['TREETOPCITY'].transform(np.cumsum)
+    world_slice3 = world_slice3[world_slice3.type == 'Assessment']
+    world_slice3 = world_slice3[['installation_id', 'game_session',
+                               'Time_spent_in_CRYSTALCAVES',
+                               'Time_spent_in_MAGMAPEAK',
+                               'Time_spent_in_TREETOPCITY']]
+
+    # Substract Level of Player
+    Level_slice4 = slice1.copy()
+    Level_slice4['Level'] = np.where(Level_slice4['title'].str.contains("Level"), Level_slice4['title'].str.strip().str[-1],0)
+    Level_slice4['Level'] = pd.to_numeric(Level_slice4['Level'])
+    Level_slice4 = pd.pivot_table(
+        Level_slice4[['installation_id', 'game_session', 'type','world', 'Level', 'Game_Session_Order']],
+        index=['installation_id', 'game_session','type', 'Game_Session_Order'],
+        columns='world',
+        values='Level',
+        aggfunc=max,
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+    Level_slice4['Level_reached_in_CRYSTALCAVES'] = Level_slice4.groupby('installation_id')['CRYSTALCAVES'].transform('cummax')
+    Level_slice4['Level_reached_in_MAGMAPEAK'] = Level_slice4.groupby('installation_id')['MAGMAPEAK'].transform('cummax')
+    Level_slice4['Level_reached_in_TREETOPCITY'] = Level_slice4.groupby('installation_id')['TREETOPCITY'].transform('cummax')
+    Level_slice4 = Level_slice4[Level_slice4.type == 'Assessment']
+    Level_slice4 = Level_slice4[['installation_id', 'game_session',
+                                 'Level_reached_in_CRYSTALCAVES',
+                                 'Level_reached_in_MAGMAPEAK',
+                                 'Level_reached_in_TREETOPCITY']]
+
+
     MergedSlices = pd.merge(type_slice_assessments, type_slice2_assessments, on=['installation_id', 'game_session'],
                             how='inner')
     # Create Dummies
@@ -168,6 +206,11 @@ def create_features(data):
                          on=['installation_id', 'game_session'])
     del FinalData['Game_Session_Order']
     FinalData = pd.merge(FinalData, Event_and_Attempts, how='inner',
+                         on=['installation_id', 'game_session'])
+
+    FinalData = pd.merge(FinalData, world_slice3, how='inner',
+                         on=['installation_id', 'game_session'])
+    FinalData = pd.merge(FinalData, Level_slice4, how='inner',
                          on=['installation_id', 'game_session'])
     return FinalData
 
@@ -271,36 +314,5 @@ Y_test = Test_set_full['accuracy_group'].to_numpy(dtype=int)
 #     'PCA1', 'PCA2', 'PCA3', 'PCA4', 'PCA5'].mean().reset_index()
 # FinalData = pd.merge(FinalData, data_compon, how='inner',
 #                      on=['installation_id', 'game_session'])
-
-
-[1: 28
-PM] Perpinias, Nikos
-
-import pandas as pd
-import numpy as np
-import json
-
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
-train = pd.read_csv('./train.csv', nrows=50000)
-Assesment = train[train['type'] == 'Assessment']
-Assesment.loc[:, 'Attempt'] = 0
-AssesmentTitles = Assesment['title'].unique()
-AssesmentTitles_sub = [item for item in AssesmentTitles if item not in ['Bird Measurer (Assessment)']]
-Assesment.loc[Assesment['event_code'].isin([4100]) & Assesment.title.isin(AssesmentTitles_sub), 'Attempt'] = 1
-Assesment.loc[
-    Assesment['event_code'].isin([4110]) & Assesment.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
-Assesment.loc[Assesment['event_data'].str.contains('false') & Assesment['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
-Assesment.loc[Assesment['event_data'].str.contains('true') & Assesment['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
-probPerAssesment = pd.Series(
-    Assesment.groupby('title')['IsAttemptSuccessful'].sum() / Assesment.groupby('title')['Attempt'].sum(),
-    name='success')
-Assesment = pd.merge(Assesment, probPerAssesment, how='left', on='title')
-Assesment = pd.merge(Assesment,
-                     pd.Series(Assesment.groupby(['installation_id', 'game_session', 'title']).Attempt.sum(), name='k'),
-                     on=['installation_id', 'game_session', 'title'], how='left')
-Assesment['BernouliProb'] = Assesment.apply(lambda x: 1 - (1 - x['success']) ** x['k'], axis=1)
-test = Assesment[['BernouliProb', 'installation_id']].drop_duplicates()
 
 
