@@ -12,6 +12,7 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.ensemble import ExtraTreesClassifier
 
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix, accuracy_score, cohen_kappa_score
@@ -37,14 +38,14 @@ classifiers.append(model5)
 model6 = EnsembleVoteClassifier(clfs=[model2,  model4], weights=[1, 1], refit=False)
 classifiers.append(model6)
 
-model7 = af.OrdinalClassifier(LogisticRegression())
+model7 = af.OrdinalClassifier(LogisticRegression(max_iter = 10000))
 classifiers.append(model7)
 
 # model8 = SVC()
 # classifiers.append(model8)
 #
-# model9 = KNeighborsClassifier()
-# classifiers.append(model9)
+model9 = KNeighborsClassifier(n_neighbors = 8)
+classifiers.append(model9)
 #
 # model10 = LinearDiscriminantAnalysis()
 # classifiers.append(model10)
@@ -53,28 +54,29 @@ classifiers.append(model7)
 # model11 = GaussianNB()
 # classifiers.append(model10)
 #
-# model12 = GaussianNB()
-# classifiers.append(model10)
 #
 # model13 = DecisionTreeClassifier()
 # classifiers.append(model13)
 # #
-# model14 = MLPClassifier()
-# classifiers.append(model14)
+model14 = MLPClassifier(max_iter = 10000)
+classifiers.append(model14)
 #
-# # model15 = GaussianProcessClassifier()
+# # clf = GaussianProcessClassifier()
 # # classifiers.append(model15)
 #
 #
 # model16 = RBF()
 # classifiers.append(model16)
 #
-# model17 = AdaBoostClassifier()
-# classifiers.append(model17)
+model17 = AdaBoostClassifier()
+classifiers.append(model17)
 #
 # model18 = QuadraticDiscriminantAnalysis()
 # classifiers.append(model18)
 
+
+model19 = ExtraTreesClassifier()
+classifiers.append(model19)
 #
 #
 
@@ -101,8 +103,8 @@ for clf in classifiers:
     clf.fit(X_train_sub, Y_train)
     Y_pred_train = clf.predict(X_train_sub)
     Y_pred_test = clf.predict(X_test_sub[X_train_sub.columns])
-    kappa_train.append(cohen_kappa_score(Y_train, Y_pred_train))
-    kappa_test.append(cohen_kappa_score(Y_test, Y_pred_test))
+    kappa_train.append(af.quadratic_weighted_kappa(Y_train, Y_pred_train))
+    kappa_test.append(af.quadratic_weighted_kappa(Y_test, Y_pred_test))
     accuracy_train.append(accuracy_score(Y_train, Y_pred_train))
     accuracy_test.append(accuracy_score(Y_test, Y_pred_test))
 

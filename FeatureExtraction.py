@@ -9,7 +9,7 @@ import os
 # os.chdir(directory)
 import pandas as pd
 import numpy as np
-import auxiliary_functions as af
+# import auxiliary_functions as af
 from functools import reduce
 
 train = pd.read_csv('Data/train.csv')
