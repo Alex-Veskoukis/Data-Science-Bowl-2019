@@ -81,15 +81,15 @@ classifiers.append(model7)
 X_train_sub = X_train
 X_test_sub = X_test
 
-col8 = col8.tolist()
-col9 = col9.tolist()
-col10 = col10.tolist()
-col11 = col11.tolist()
-col12 = col12.tolist()
-col13 = col13.tolist()
-ex = col8 + col9 + col10 + col11 + col12 +col13
-X_train_sub = X_train.loc[:,~X_train.columns.isin(ex)]
-X_test_sub = X_test.loc[:,~X_test.columns.isin(ex)]
+# col8 = col8.tolist()
+# col9 = col9.tolist()
+# col10 = col10.tolist()
+# col11 = col11.tolist()
+# col12 = col12.tolist()
+# col13 = col13.tolist()
+# ex = col8 + col9 + col10 + col11 + col12 +col13
+# X_train_sub = X_train.loc[:,~X_train.columns.isin(ex)]
+# X_test_sub = X_test.loc[:,~X_test.columns.isin(ex)]
 
 kappa_train = []
 kappa_test = []
@@ -154,6 +154,8 @@ from sklearn.ensemble import ExtraTreesClassifier
 # fit an Extra Trees model to the data
 model = ExtraTreesClassifier()
 model.fit(X_train, Y_train)
+Y_pred = model.predict(X_test)
+cohen_kappa_score(Y_test, Y_pred)
 # display the relative importance of each attribute
 print(model.feature_importances_)
 

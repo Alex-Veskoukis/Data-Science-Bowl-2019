@@ -293,7 +293,8 @@ def get_past_assessment_time_events_and_metrics(data):
         shift(1, fill_value=0)
     slice3['Past_Assessment_NumberOfEvents'] = slice3.groupby('installation_id')['Assessment_NumberOfEvents']. \
         shift(1, fill_value=0)
-    slice3 = slice3.assign(cumAverageTime=slice3.groupby('installation_id', sort=False)['Past_Assessment_Session_Time']. \
+    slice3 = slice3.assign(
+        cumAverageTime=slice3.groupby('installation_id', sort=False)['Past_Assessment_Session_Time']. \
                            transform(lambda x: x.expanding().mean()))
     slice3 = slice3.assign(
         cumAverageEvents=slice3.groupby('installation_id', sort=False)['Past_Assessment_NumberOfEvents']. \
@@ -451,24 +452,20 @@ def get_cummulative_past_assesments_per_title(data):
 def get_frequency_per_type(data):
     import pandas as pd
     type_slice = pd.pivot_table(data[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
-                                index=['installation_id', 'game_session', 'Game_Session_Order'],
+                                index=['installation_id', 'game_session','type', 'Game_Session_Order'],
                                 columns='type',
                                 aggfunc=len,
                                 fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    type_slice['Past_Activities'] = type_slice.groupby('installation_id')['Activity'].transform(np.cumsum)
-    type_slice['Past_Games'] = type_slice.groupby('installation_id')['Game'].transform(np.cumsum)
-    type_slice['Past_Clips'] = type_slice.groupby('installation_id')['Clip'].transform(np.cumsum)
-    type_slice['Past_Assessments'] = type_slice.groupby('installation_id')['Assessment'].transform(np.cumsum) - 1
+    type_slice['Activities_played'] = type_slice.groupby('installation_id')['Activity'].transform(np.cumsum)
+    type_slice['Games_played'] = type_slice.groupby('installation_id')['Game'].transform(np.cumsum)
+    type_slice['Clips__played'] = type_slice.groupby('installation_id')['Clip'].transform(np.cumsum)
+    type_slice['Assessments_played'] = type_slice.groupby('installation_id')['Assessment'].transform(np.cumsum)
     type_slice_assessments = type_slice[type_slice.Assessment == 1]
-    type_slice_assessments = type_slice_assessments.rename(columns={'Game_Session_Order': 'Total_Game_Sessions'})
+    type_slice_assessments = type_slice_assessments.rename(columns={'Game_Session_Order': 'Total_Games_played'})
     type_slice_assessments = type_slice_assessments.drop(['Game', 'Clip', 'Assessment', 'Activity'], axis=1)
-    type_slice_assessments['Clips'] = type_slice_assessments['Past_Clips']
-    type_slice_assessments['Games'] = type_slice_assessments['Past_Games']
-    type_slice_assessments['Assessments'] = type_slice_assessments['Past_Assessments']
-    type_slice_assessments['Activities'] = type_slice_assessments['Past_Activities']
     type_slice_assessments = type_slice_assessments.loc[:,
-                             ['installation_id', 'game_session', 'Total_Game_Sessions', 'Clips',
-                              'Games', 'Assessments', 'Activities']].drop_duplicates()
+                             ['installation_id', 'game_session', 'Total_Games_played', 'Clips__played',
+                              'Games_played', 'Assessments_played', 'Activities_played']].drop_duplicates()
     return type_slice_assessments
 
 
@@ -481,10 +478,9 @@ def get_cumulative_time_spent_on_types(data):
         values='Total_Game_Session_Time',
         aggfunc=sum,
         fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    type_slice2['Time_spent_on_Activities'] = type_slice2.groupby('installation_id')['Activity'].transform(np.cumsum).shift(1, fill_value=0)
-    type_slice2['Time_spent_on_Games'] = type_slice2.groupby('installation_id')['Game'].transform(np.cumsum).shift(1, fill_value=0)
-    type_slice2['Time_spent_on_Clips'] = type_slice2.groupby('installation_id')['Clip'].transform(np.cumsum).shift(1, fill_value=0)
-    type_slice2['Time_spent_on_Assessments'] = type_slice2.groupby('installation_id')['Assessment'].transform(np.cumsum).shift(1, fill_value=0)
+    type_slice2['Time_spent_on_Activities'] = type_slice2.groupby('installation_id')['Activity'].transform(np.cumsum)
+    type_slice2['Time_spent_on_Games'] = type_slice2.groupby('installation_id')['Game'].transform(np.cumsum)
+    type_slice2['Time_spent_on_Assessments'] = type_slice2.groupby('installation_id')['Assessment'].transform(np.cumsum)
 
     type_slice2['Average_Time_spent_on_Activities'] = \
         type_slice2[type_slice2.type == 'Activity'].groupby('installation_id')['Activity'].transform(
@@ -517,8 +513,7 @@ def get_cumulative_time_spent_on_types(data):
 
     type_slice2_assessments = type_slice2[type_slice2.type == 'Assessment'].copy()
     type_slice2_assessments.loc[:, 'Total_Time_spent'] = type_slice2_assessments[
-    ['Time_spent_on_Activities', 'Time_spent_on_Games',
-    'Time_spent_on_Clips', 'Time_spent_on_Assessments']].sum(axis=1)
+    ['Time_spent_on_Activities', 'Time_spent_on_Games','Time_spent_on_Assessments']].sum(axis=1)
 
     type_slice2_assessments['Average_Time_spent_on_games'] = \
     type_slice2_assessments.groupby('installation_id')['Total_Time_spent'].transform(lambda x: x.expanding().mean())
@@ -544,18 +539,18 @@ def get_cumulative_time_spent_on_types(data):
 def get_time_spent_on_diffrent_worlds(data):
     import pandas as pd
     world_slice3 =  pd.pivot_table(
-    data[['installation_id', 'game_session', 'world', 'Game_Session_Order', 'type', 'Total_Game_Session_Time']],
-    index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-    columns='world',
-    values='Total_Game_Session_Time',
-    aggfunc=sum,
-    fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+        data[['installation_id', 'game_session', 'world', 'Game_Session_Order', 'type', 'Total_Game_Session_Time']],
+        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
+        columns='world',
+        values='Total_Game_Session_Time',
+        aggfunc=sum,
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
     world_slice3['Time_spent_in_CRYSTALCAVES'] = world_slice3.groupby('installation_id')['CRYSTALCAVES'].transform(
-    np.cumsum).shift(1, fill_value=0)
+    np.cumsum)
     world_slice3['Time_spent_in_MAGMAPEAK'] = world_slice3.groupby('installation_id')[
-        'MAGMAPEAK'].transform(np.cumsum).shift(1, fill_value=0)
+        'MAGMAPEAK'].transform(np.cumsum)
     world_slice3['Time_spent_in_TREETOPCITY'] = world_slice3.groupby('installation_id')['TREETOPCITY'].transform(
-    np.cumsum).shift(1, fill_value=0)
+    np.cumsum)
     world_slice3 = world_slice3[world_slice3.type == 'Assessment']
     world_slice3 = world_slice3[['installation_id', 'game_session', 'Time_spent_in_CRYSTALCAVES',
     'Time_spent_in_MAGMAPEAK', 'Time_spent_in_TREETOPCITY']]
