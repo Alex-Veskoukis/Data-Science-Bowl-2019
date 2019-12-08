@@ -14,7 +14,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 import xgboost as xgb
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import confusion_matrix, accuracy_score, cohen_kappa_score
 import seaborn as sns
 
 classifiers = []
@@ -90,18 +90,30 @@ for clf in classifiers:
     clf.fit(X_train, Y_train)
     Y_pred_train = clf.predict(X_train)
     Y_pred_test = clf.predict(X_test[X_train.columns])
-    kappa_train.append(af.quadratic_weighted_kappa(Y_train, Y_pred_train))
-    kappa_test.append(af.quadratic_weighted_kappa(Y_test, Y_pred_test))
+    kappa_train.append(cohen_kappa_score(Y_train, Y_pred_train))
+    kappa_test.append(cohen_kappa_score(Y_test, Y_pred_test))
     accuracy_train.append(accuracy_score(Y_train, Y_pred_train))
     accuracy_test.append(accuracy_score(Y_test, Y_pred_test))
+
+
+
+
+
+
 
 # Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
 
 rf = RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42)
-rf.fit(X_train, Y_train)
-Y_pred = rf.predict(X_test)
+rfe = RFE(rf, 3)
+fit = rfe.fit(X_train, Y_train)
+print("Num Features: %d" % fit.n_features_)
+print("Selected Features: %s" % fit.support_)
+print("Feature Ranking: %s" % fit.ranking_)
+
+Y_pred = fit.predict(X_test)
 af.quadratic_weighted_kappa(Y_test, Y_pred)
+cohen_kappa_score(Y_test, Y_pred)
 
 # importance
 importances = rf.feature_importances_
