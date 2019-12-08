@@ -1,3 +1,18 @@
+import functools
+def reduce_concat(x, sep=""):
+    return functools.reduce(lambda x, y: str(x) + sep + str(y), x)
+
+def paste(*lists, sep=" ", collapse=None):
+    result = map(lambda x: reduce_concat(x, sep=sep), zip(*lists))
+    if collapse is not None:
+        return reduce_concat(result, sep=collapse)
+    return list(result)
+
+
+paste0 = functools.partial(paste, sep="")
+
+
+
 def compare_shapes(x, y):
     print(x.shape[1] == y.shape[1])
 

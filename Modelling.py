@@ -1,8 +1,20 @@
 import auxiliary_functions as af
 from sklearn.ensemble import RandomForestClassifier
 from mlxtend.classifier import EnsembleVoteClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
 import xgboost as xgb
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score
 import seaborn as sns
 
 classifiers = []
@@ -13,7 +25,7 @@ classifiers.append(model1)
 model2 = af.OrdinalClassifier(xgb.XGBClassifier())
 classifiers.append(model2)
 
-model3 = RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42)
+model3 = RandomForestClassifier(n_estimators=1000, n_jobs=-1, random_state=42)
 classifiers.append(model3)
 
 model4 = af.OrdinalClassifier(RandomForestClassifier(n_estimators=83, n_jobs=-1, random_state=42))
@@ -25,12 +37,63 @@ classifiers.append(model5)
 model6 = EnsembleVoteClassifier(clfs=[model2,  model4], weights=[1, 1], refit=False)
 classifiers.append(model6)
 
-kappa = []
+model7 = af.OrdinalClassifier(LogisticRegression())
+classifiers.append(model7)
+
+# model8 = SVC()
+# classifiers.append(model8)
+#
+# model9 = KNeighborsClassifier()
+# classifiers.append(model9)
+#
+# model10 = LinearDiscriminantAnalysis()
+# classifiers.append(model10)
+#
+#
+# model11 = GaussianNB()
+# classifiers.append(model10)
+#
+# model12 = GaussianNB()
+# classifiers.append(model10)
+#
+# model13 = DecisionTreeClassifier()
+# classifiers.append(model13)
+# #
+# model14 = MLPClassifier()
+# classifiers.append(model14)
+#
+# # model15 = GaussianProcessClassifier()
+# # classifiers.append(model15)
+#
+#
+# model16 = RBF()
+# classifiers.append(model16)
+#
+# model17 = AdaBoostClassifier()
+# classifiers.append(model17)
+#
+# model18 = QuadraticDiscriminantAnalysis()
+# classifiers.append(model18)
+
+#
+#
+# X_train = X_train.loc[:,~X_train.columns.isin(['Past_Assessment_ag','Past_Assessment_att','Past_Assessment_succ'])]
+# X_test= X_test.loc[:,~X_test.columns.isin(['Past_Assessment_ag','Past_Assessment_att','Past_Assessment_succ'])]
+
+kappa_train = []
+kappa_test = []
+
+accuracy_train = []
+accuracy_test = []
 for clf in classifiers:
     print(clf)
     clf.fit(X_train, Y_train)
-    Y_pred = clf.predict(X_test)
-    kappa.append(af.quadratic_weighted_kappa(Y_test, Y_pred))
+    Y_pred_train = clf.predict(X_train)
+    Y_pred_test = clf.predict(X_test[X_train.columns])
+    kappa_train.append(af.quadratic_weighted_kappa(Y_train, Y_pred_train))
+    kappa_test.append(af.quadratic_weighted_kappa(Y_test, Y_pred_test))
+    accuracy_train.append(accuracy_score(Y_train, Y_pred_train))
+    accuracy_test.append(accuracy_score(Y_test, Y_pred_test))
 
 # Run RF classifier
 from sklearn.ensemble import RandomForestClassifier
