@@ -77,8 +77,19 @@ classifiers.append(model7)
 
 #
 #
-# X_train = X_train.loc[:,~X_train.columns.isin(['Past_Assessment_ag','Past_Assessment_att','Past_Assessment_succ'])]
-# X_test= X_test.loc[:,~X_test.columns.isin(['Past_Assessment_ag','Past_Assessment_att','Past_Assessment_succ'])]
+
+X_train_sub = X_train
+X_test_sub = X_test
+
+col8 = col8.tolist()
+col9 = col9.tolist()
+col10 = col10.tolist()
+col11 = col11.tolist()
+col12 = col12.tolist()
+col13 = col13.tolist()
+ex = col8 + col9 + col10 + col11 + col12 +col13
+X_train_sub = X_train.loc[:,~X_train.columns.isin(ex)]
+X_test_sub = X_test.loc[:,~X_test.columns.isin(ex)]
 
 kappa_train = []
 kappa_test = []
@@ -87,9 +98,9 @@ accuracy_train = []
 accuracy_test = []
 for clf in classifiers:
     print(clf)
-    clf.fit(X_train, Y_train)
-    Y_pred_train = clf.predict(X_train)
-    Y_pred_test = clf.predict(X_test[X_train.columns])
+    clf.fit(X_train_sub, Y_train)
+    Y_pred_train = clf.predict(X_train_sub)
+    Y_pred_test = clf.predict(X_test_sub[X_train_sub.columns])
     kappa_train.append(cohen_kappa_score(Y_train, Y_pred_train))
     kappa_test.append(cohen_kappa_score(Y_test, Y_pred_test))
     accuracy_train.append(accuracy_score(Y_train, Y_pred_train))
@@ -97,8 +108,27 @@ for clf in classifiers:
 
 
 
-
-
+# RFE
+from sklearn.feature_selection import RFE
+#no of features
+nof_list=np.arange(1,100)
+high_score=0
+#Variable to store the optimum features
+nof=0
+score_list =[]
+for n in range(len(nof_list)):
+    model =  RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
+    rfe = RFE(model,nof_list[n])
+    X_train_rfe = rfe.fit_transform(X_train,Y_train)
+    X_test_rfe = rfe.transform(X_test)
+    model.fit(X_train_rfe,Y_train)
+    score = model.score(X_test_rfe,Y_test)
+    score_list.append(score)
+    if(score>high_score):
+        high_score = score
+        nof = nof_list[n]
+print("Optimum number of features: %d" %nof)
+print("Score with %d features: %f" % (nof, high_score))
 
 
 # Run RF classifier
@@ -127,8 +157,7 @@ model.fit(X_train, Y_train)
 # display the relative importance of each attribute
 print(model.feature_importances_)
 
-# RFE
-from sklearn.feature_selection import RFE
+
 
 rfe = RFE(rf, 10)
 rfe = rfe.fit(X_train, Y_train)

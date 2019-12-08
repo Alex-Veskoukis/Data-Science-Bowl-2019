@@ -19,6 +19,19 @@ specs = pd.read_csv('Data/specs.csv')
 
 
 def create_features(data):
+    global col1
+    global col2
+    global col3
+    global col4
+    global col5
+    global col6
+    global col7
+    global col8
+    global col9
+    global col10
+    global col11
+    global col12
+    global col13
     trainTitles = data['title'].unique()
     trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
     AttemptIndicator = (data.type == 'Assessment') & \
@@ -119,6 +132,20 @@ def create_features(data):
             cummulative_successes_per_title,
             cummulative_past_assesments_per_title]
     FinalData = reduce(lambda left, right: pd.merge(left, right, how='inner',on=['installation_id', 'game_session']), Sets)
+
+    col1 = Number_of_games_played_per_type.columns
+    col2 = Time_spent_on_games_metrics.columns
+    col3 = past_assessment_time_events_and_metrics.columns
+    col4 = pre_time_till_attempt_metrics.columns
+    col5 = time_spent_on_diffrent_worlds.columns
+    col6 = Level_reached.columns
+    col7 = previous_accuracy_metrics.columns
+    col8 = title_visits.columns
+    col9 = cummulative_time_spent_in_titles.columns
+    col10 = cummulative_events_seen_per_title.columns
+    col11 = cummulative_attempts_per_title.columns
+    col12 = cummulative_successes_per_title.columns
+    col13 = cummulative_past_assesments_per_title.columns
     return FinalData
 
 
@@ -167,7 +194,7 @@ def get_test_set_accuracy(data):
     Assess['order']=Assess.groupby('installation_id')[
         'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
     Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
-    Assess.loc[Assess.order == Assess.LastGame - 1, "To_Predict"] = 1
+    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
     Assess = Assess.drop('accuracy', axis=1)
     Assess = Assess.drop_duplicates()
     return Assess
