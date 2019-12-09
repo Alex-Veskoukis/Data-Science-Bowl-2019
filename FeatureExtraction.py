@@ -557,15 +557,62 @@ def get_last_assessment(data):
     Assess = Assess.loc[Assess.To_Predict == 1, ['installation_id', 'game_session']]
     return Assess
 
+# for 2nd last attempt
+def get_last_assessment2(data):
+    Assess = data[data.type == 'Assessment'].copy()
+    Assess['Attempt'] = 0
+    AssessmentTitles = Assess['title'].unique()
+    AssessmentTitles1 = [item for item in AssessmentTitles if item not in ['Bird Measurer (Assessment)']]
+    Assess.loc[Assess['event_code'].isin([4100]) & Assess.title.isin(AssessmentTitles1), 'Attempt'] = 1
+    Assess.loc[
+    Assess['event_code'].isin([4110]) & Assess.title.isin(['Bird Measurer (Assessment)']), 'Attempt'] = 1
+    Assess.loc[
+    Assess['event_data'].str.contains('false') & Assess['Attempt'] == 1, 'IsAttemptSuccessful'] = 0
+    Assess.loc[
+    Assess['event_data'].str.contains('true') & Assess['Attempt'] == 1, 'IsAttemptSuccessful'] = 1
+    Assess['timestamp'] = pd.to_datetime(Assess['timestamp'], format="%Y-%m-%d %H:%M")
+    Assess['Attempts'] = Assess.groupby(['installation_id', 'game_session'])['Attempt'].transform(np.sum)
+    Assess['Success'] = Assess.groupby(['installation_id', 'game_session'])['IsAttemptSuccessful'].transform(np.sum)
+    Assess = Assess.set_index(['installation_id', 'game_session'])
+    Assess = Assess[['Attempts', 'Success', 'timestamp']]
+    ratio = Assess['Success'] / Assess['Attempts']
+    conditions = [
+    (ratio == 1),
+    (ratio == 0.5),
+    (ratio < 0.5) & (ratio > 0),
+    (ratio == 0)]
+    choices = [3, 2, 1, 0]
+    Assess['accuracy_group'] = np.select(conditions, choices)
+    Assess['accuracy'] = ratio
+    Assess = Assess.reset_index()
+    Assess = Assess.sort_values(['installation_id', 'timestamp'])
+    Assess = Assess[[ 'accuracy', 'accuracy_group', 'installation_id', 'game_session']]
+    Assess["To_Predict"] = 0
+    Assess['order'] = Assess.groupby('installation_id')['game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
+    Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
+    Assess.loc[Assess.order == Assess.LastGame - 1, "To_Predict"] = 1
+    Assess = Assess.drop('accuracy', axis=1)
+    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
+    Assess = Assess.drop_duplicates()
+    Assess = Assess.loc[Assess.To_Predict == 1, :]
+    return Assess
 
-Test_Set = get_last_assessment(test)
+Test_Set = get_last_assessment2(test)
+
+Y_test = Test_Set['accuracy_group'].astype(int)
+
+Test_Set = Test_Set[['installation_id', 'game_session']]
 
 Test_set_full = pd.merge(Test_Features, Test_Set, on=['installation_id', 'game_session'], how='right')
+
+
+
 
 X_train = FinalTrain.loc[:, ~FinalTrain.columns.isin(['accuracy_group', 'installation_id', 'game_session'])]
 Y_train = FinalTrain['accuracy_group'].astype(int)
 
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
+
 
 model= RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
