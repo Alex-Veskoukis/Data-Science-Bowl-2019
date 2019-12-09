@@ -592,7 +592,9 @@ def create_world_time_assesstitle_Dummies(data):
     del Assessments['title']
     Assessments = Assessments.reset_index()
     Assessments = Assessments.drop_duplicates()
+    Assessments = Assessments[Assessments.hour == Assessments.groupby(['installation_id', 'game_session'])['hour'].min]
     return Assessments
+
 
 
 def get_vists_per_title(data):

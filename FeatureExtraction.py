@@ -414,6 +414,7 @@ def create_world_time_assesstitle_Dummies(data):
     del Assessments['title']
     Assessments = Assessments.reset_index()
     Assessments = Assessments.drop_duplicates()
+    Assessments = Assessments[Assessments.hour == Assessments.groupby(['installation_id', 'game_session'])['hour'].min]
     return Assessments
 
 
@@ -545,17 +546,17 @@ FinalTrain = FinalTrain.set_index(['installation_id', 'game_session'])
 Test_Features = create_features(test)
 
 
-def get_last_assessment(data):
-    Assess = data[data.type == 'Assessment'].copy()
-    Assess = Assess[['installation_id', 'game_session']]
-    Assess["To_Predict"] = 0
-    Assess['order'] = Assess.groupby('installation_id')[
-        'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
-    Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
-    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
-    Assess = Assess.drop_duplicates()
-    Assess = Assess.loc[Assess.To_Predict == 1, ['installation_id', 'game_session']]
-    return Assess
+# def get_last_assessment(data):
+#     Assess = data[data.type == 'Assessment'].copy()
+#     Assess = Assess[['installation_id', 'game_session']]
+#     Assess["To_Predict"] = 0
+#     Assess['order'] = Assess.groupby('installation_id')[
+#         'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
+#     Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
+#     Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
+#     Assess = Assess.drop_duplicates()
+#     Assess = Assess.loc[Assess.To_Predict == 1, ['installation_id', 'game_session']]
+#     return Assess
 
 # for 2nd last attempt
 def get_last_assessment2(data):
@@ -603,7 +604,9 @@ Y_test = Test_Set['accuracy_group'].astype(int)
 
 Test_Set = Test_Set[['installation_id', 'game_session']]
 
-Test_set_full = pd.merge(Test_Features, Test_Set, on=['installation_id', 'game_session'], how='right')
+
+Test_Features = Test_Features[(Test_Features.game_session.isin(Test_Set.game_session) & Test_Features.installation_id.isin(Test_Set.installation_id))]
+Test_set_full = pd.merge(Test_Set , Test_Features, on=['installation_id', 'game_session'], how='left')
 
 
 
