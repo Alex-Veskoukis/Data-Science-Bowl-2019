@@ -624,6 +624,8 @@ Y_pred_test = model.predict(X_test)
 cohen_kappa_score(Y_test,Y_pred_test)
 
 
+from mlxtend.classifier import EnsembleVoteClassifier
+
 
 
 submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
