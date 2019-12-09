@@ -528,12 +528,7 @@ def create_features(data):
             pre_time_till_attempt_metrics,
             time_spent_on_diffrent_worlds,
             Level_reached,
-            previous_accuracy_metrics,
-            title_visits,
-            cummulative_time_spent_in_titles,
-            cummulative_events_seen_per_title,
-            cummulative_attempts_per_title,
-            cummulative_successes_per_title]
+            previous_accuracy_metrics]
     FinalData = reduce(lambda left, right: pd.merge(left, right, how='inner', on=['installation_id', 'game_session']),
                        Sets)
     return FinalData
@@ -573,12 +568,12 @@ Y_train = FinalTrain['accuracy_group'].astype(int)
 
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 
-model = RandomForestClassifier(n_estimators=80, n_jobs=-1, random_state=42)
+model = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
 Y_pred_train = model.predict(X_train)
 cohen_kappa_score(Y_train, Y_pred_train)
 Y_pred_test = model.predict(X_test)
-cohen_kappa_score(Y_train, Y_pred_train)
+
 
 # submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
 #                            "accuracy_group": Y_pred_test})

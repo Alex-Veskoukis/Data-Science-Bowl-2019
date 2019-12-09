@@ -103,8 +103,6 @@ def create_features(data):
     cummulative_attempts_per_title = af.get_cummulative_attempts_per_title(slice8)
     # Slice 9
     cummulative_successes_per_title = af.get_cummulative_successes_per_title(slice8)
-    # Slice 10
-    cummulative_past_assesments_per_title = af.get_cummulative_past_assesments_per_title(slice8)
     # Slice 1 / Type frequency Experience Measures
     Number_of_games_played_per_type = af.get_frequency_per_type(slice1)
     # Slice 1 / Type time spent Experience Measures
@@ -129,8 +127,7 @@ def create_features(data):
             cummulative_time_spent_in_titles,
             cummulative_events_seen_per_title,
             cummulative_attempts_per_title,
-            cummulative_successes_per_title,
-            cummulative_past_assesments_per_title]
+            cummulative_successes_per_title]
     FinalData = reduce(lambda left, right: pd.merge(left, right, how='inner',on=['installation_id', 'game_session']), Sets)
 
     col1 = Number_of_games_played_per_type.columns
@@ -145,7 +142,6 @@ def create_features(data):
     col10 = cummulative_events_seen_per_title.columns
     col11 = cummulative_attempts_per_title.columns
     col12 = cummulative_successes_per_title.columns
-    col13 = cummulative_past_assesments_per_title.columns
     return FinalData
 
 

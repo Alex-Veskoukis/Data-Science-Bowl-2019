@@ -433,22 +433,6 @@ def get_cummulative_successes_per_title(data):
     return title_slice9_assessments
 
 
-# def get_cummulative_past_assesments_per_title(data):
-#     import pandas as pd
-#     titlecols = slice8.title.unique()
-#     topiv =slice8[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Past_Assessments_Played']]
-#     title_slice10 = pd.pivot_table(
-#                 slice8[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Past_Assessments_Played']],
-#                 index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-#                 columns='title',
-#                 values='Past_Assessments_Played',
-#                 fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-#     cols = ["cumulative_Assessments_Played_" + title for title in titlecols]
-#     title_slice10[cols] = title_slice10[titlecols]
-#     cols.extend(['installation_id', 'game_session'])
-#     title_slice10_assessments = title_slice10.loc[title_slice10.type == 'Assessment', cols]
-#     return title_slice10_assessments
-
 
 def get_frequency_per_type(data):
     import pandas as pd
