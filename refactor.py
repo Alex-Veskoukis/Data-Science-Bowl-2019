@@ -44,7 +44,8 @@ def create_features(data):
         'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
     data['Cumulative_Attempts'] = Inst_Group['Attempt'].transform(np.cumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
-
+    data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
+    data['Cumulative_Fails'] = data['Cumulative_Attempts'] - data['Cumulative_Successes']
     data['Assessment_Session_Time'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])[
         'game_time'].transform(np.max)
     data['Assessment_NumberOfEvents'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])[
@@ -53,10 +54,10 @@ def create_features(data):
     previous_accuracy_metrics = af.get_previous_ac_metrics(data)
     print('previous_accuracy_metrics')
     # Slice 1
-    slice1 = data.copy().loc[(data.game_time == data.Total_Game_Session_Time) &
+    slice1 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
                              (data.event_count == data.Total_Game_Session_Events),
                              ['installation_id', 'game_session', 'type', 'title', 'world', 'Total_Game_Session_Time',
-                              'Total_Game_Session_Events']].drop_duplicates()
+                              'Total_Game_Session_Events']].drop_duplicates().copy()
     slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
     slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
     # Slice 2
@@ -143,17 +144,6 @@ FinalTrain = FinalTrain.set_index(['installation_id', 'game_session'])
 Test_Features = create_features(test)
 
 
-def get_last_assessment(data):
-    Assess = data[data.type == 'Assessment'].copy()
-    Assess = Assess[['installation_id', 'game_session']]
-    Assess["To_Predict"] = 0
-    Assess['order'] = Assess.groupby('installation_id')[
-        'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
-    Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
-    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
-    Assess = Assess.drop_duplicates()
-    Assess = Assess.loc[Assess.To_Predict == 1, ['installation_id', 'game_session']]
-    return Assess
 
 
 Test_Set = get_last_assessment(test)

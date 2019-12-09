@@ -628,3 +628,18 @@ def get_vists_per_title(data):
     cols.extend(['installation_id', 'game_session'])
     titles_played = title_slice5_assessments[cols]
     return titles_played
+
+
+
+
+def get_last_assessment(data):
+    Assess = data[data.type == 'Assessment'].copy()
+    Assess = Assess[['installation_id', 'game_session']]
+    Assess["To_Predict"] = 0
+    Assess['order'] = Assess.groupby('installation_id')[
+        'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
+    Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
+    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
+    Assess = Assess.drop_duplicates()
+    Assess = Assess.loc[Assess.To_Predict == 1, ['installation_id', 'game_session']]
+    return Assess
