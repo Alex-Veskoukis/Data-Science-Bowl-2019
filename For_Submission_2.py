@@ -6,6 +6,8 @@ import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 from functools import reduce
 from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
+from mlxtend.classifier import EnsembleVoteClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score, cohen_kappa_score
 
 # Input data files are available in the "../input/" directory.
@@ -14,7 +16,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score, cohen_kappa_score
 train = pd.read_csv('Data/train.csv')
 test = pd.read_csv('Data/test.csv')
 train_labels = pd.read_csv('Data/train_labels.csv')
-
+sample_submission = pd.read_csv('Data/sample_submission.csv')
 
 # train = pd.read_csv('/kaggle/input/data-science-bowl-2019/train.csv')
 # test = pd.read_csv('/kaggle/input/data-science-bowl-2019/test.csv')
@@ -480,16 +482,6 @@ def create_features(data):
     # Event_and_Attempts
     pre_time_till_attempt_metrics = get_prev_events_and_time_till_attempt(data)
     print('pre_time_till_attempt_metrics')
-    # title dummies
-    title_visits = get_vists_per_title(slice1)
-    print('title_visits')
-    # Slice 1 / titles times
-    cummulative_time_spent_in_titles = get_cummulative_time_spent_in_titles(slice1)
-    print('cummulative_time_spent_in_titles')
-    # Slice 1 / events count
-    cummulative_events_seen_per_title = get_cummulative_events_seen_per_title(slice1)
-    print('cummulative_events_seen_per_title')
-    # Slice 8
     slice8 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
                       (data.event_count == data.Total_Game_Session_Events),
                       ['installation_id', 'game_session', 'type',
@@ -511,12 +503,7 @@ def create_features(data):
 
     slice8['Game_Session_Order'] = slice8.groupby('installation_id')['game_session'].cumcount() + 1
 
-    cummulative_attempts_per_title = get_cummulative_attempts_per_title(slice8)
-    print('cummulative_attempts_per_title')
-    # Slice 9
-    cummulative_successes_per_title = get_cummulative_successes_per_title(slice8)
-    print('cummulative_successes_per_title')
-      # Slice 1 / Type frequency Experience Measures
+    # Slice 1 / Type frequency Experience Measures
     Number_of_games_played_per_type = get_frequency_per_type(slice1)
     print('Number_of_games_played_per_type')
     # Slice 1 / Type time spent Experience Measures
@@ -565,7 +552,7 @@ def get_last_assessment(data):
     Assess['order'] = Assess.groupby('installation_id')[
         'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
     Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
-    Assess.loc[Assess.order == Assess.LastGame -1, "To_Predict"] = 1
+    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
     Assess = Assess.drop_duplicates()
     Assess = Assess.loc[Assess.To_Predict == 1, ['installation_id', 'game_session']]
     return Assess
@@ -580,14 +567,17 @@ Y_train = FinalTrain['accuracy_group'].astype(int)
 
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 
-model = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
+model= RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
 Y_pred_train = model.predict(X_train)
 cohen_kappa_score(Y_train, Y_pred_train)
 Y_pred_test = model.predict(X_test)
+cohen_kappa_score(Y_test,Y_pred_test)
 
 
-# submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
-#                            "accuracy_group": Y_pred_test})
-# submission.to_csv("submission.csv", index=False)
-#
+
+
+submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
+                           "accuracy_group": Y_pred_test})
+submission.to_csv("submission.csv", index=False)
+

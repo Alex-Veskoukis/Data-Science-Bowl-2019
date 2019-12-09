@@ -190,7 +190,7 @@ def get_test_set_accuracy(data):
     Assess['order']=Assess.groupby('installation_id')[
         'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
     Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
-    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
+    Assess.loc[Assess.order == Assess.LastGame - 1, "To_Predict"] = 1
     Assess = Assess.drop('accuracy', axis=1)
     Assess = Assess.drop_duplicates()
     return Assess
