@@ -616,12 +616,14 @@ Y_train = FinalTrain['accuracy_group'].astype(int)
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 
 
-model= RandomForestClassifier(n_estimators=8, n_jobs=-1, random_state=42)
+model1= RandomForestClassifier(n_estimators=1000, n_jobs=-1, random_state=42)
+
+model = xgb.XGBClassifier()
+
 model.fit(X_train, Y_train)
-Y_pred_train = model.predict(X_train)
-cohen_kappa_score(Y_train, Y_pred_train)
+
 Y_pred_test = model.predict(X_test)
-cohen_kappa_score(Y_test,Y_pred_test)
+quadratic_weighted_kappa(Y_test,Y_pred_test)
 
 
 from mlxtend.classifier import EnsembleVoteClassifier

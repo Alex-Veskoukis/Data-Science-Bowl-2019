@@ -5,14 +5,19 @@
 import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 from functools import reduce
-from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
+
 # Input data files are available in the "../input/" directory.
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
 
-
-train = pd.read_csv('/kaggle/input/data-science-bowl-2019/train.csv')
-test = pd.read_csv('/kaggle/input/data-science-bowl-2019/test.csv')
-train_labels = pd.read_csv('/kaggle/input/data-science-bowl-2019/train_labels.csv')
+#
+# train = pd.read_csv('/kaggle/input/data-science-bowl-2019/train.csv')
+# test = pd.read_csv('/kaggle/input/data-science-bowl-2019/test.csv')
+# train_labels = pd.read_csv('/kaggle/input/data-science-bowl-2019/train_labels.csv')
+train = pd.read_csv('Data/train.csv')
+test = pd.read_csv('Data/test.csv')
+train_labels = pd.read_csv('Data/train_labels.csv')
+sample_submission = pd.read_csv('Data/sample_submission.csv')
 
 
 # Any results you write to the current directory are saved as output.
@@ -183,72 +188,6 @@ def get_prev_events_and_time_till_attempt(data):
     return Event_and_Attempts
 
 
-def get_cummulative_time_spent_in_titles(data):
-    import pandas as pd
-    titlecols = data.title.unique()
-    title_slice6 = pd.pivot_table(
-        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Total_Game_Session_Time']],
-        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-        columns='title',
-        values='Total_Game_Session_Time',
-        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    cols = ["cumulative_timespent_" + title for title in titlecols]
-    title_slice6[cols] = title_slice6.groupby('installation_id')[titlecols].transform(np.cumsum)
-    title_slice6[cols] = title_slice6[cols].shift(1, fill_value=0)
-    cols.extend(['installation_id', 'game_session'])
-    title_slice6_assessments = title_slice6.loc[title_slice6.type == 'Assessment', cols]
-    return title_slice6_assessments
-
-
-def get_cummulative_events_seen_per_title(data):
-    import pandas as pd
-    titlecols = data.title.unique()
-    title_slice7 = pd.pivot_table(
-        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Total_Game_Session_Events']],
-        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-        columns='title',
-        values='Total_Game_Session_Events',
-        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    cols = ["cumulative_events_" + title for title in titlecols]
-    title_slice7[cols] = title_slice7.groupby('installation_id')[titlecols].transform(np.cumsum)
-    title_slice7[cols] = title_slice7[cols].shift(1, fill_value=0)
-    cols.extend(['installation_id', 'game_session'])
-    title_slice7_assessments = title_slice7.loc[title_slice7.type == 'Assessment', cols]
-    return title_slice7_assessments
-
-
-def get_cummulative_attempts_per_title(data):
-    import pandas as pd
-    titlecols = data.title.unique()
-    title_slice8 = pd.pivot_table(
-        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Past_Total_Attempts']],
-        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-        columns='title',
-        values='Past_Total_Attempts',
-        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    cols = ["cumulative_attempts_" + title for title in titlecols]
-    title_slice8[cols] = title_slice8[titlecols]
-    cols.extend(['installation_id', 'game_session'])
-    title_slice8_assessments = title_slice8.loc[title_slice8.type == 'Assessment', cols]
-    return title_slice8_assessments
-
-
-def get_cummulative_successes_per_title(data):
-    import pandas as pd
-    titlecols = data.title.unique()
-    title_slice9 = pd.pivot_table(
-        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Past_Total_Successes']],
-        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-        columns='title',
-        values='Past_Total_Successes',
-        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    cols = ["cumulative_successes_" + title for title in titlecols]
-    title_slice9[cols] = title_slice9[titlecols]
-    cols.extend(['installation_id', 'game_session'])
-    title_slice9_assessments = title_slice9.loc[title_slice9.type == 'Assessment', cols]
-    return title_slice9_assessments
-
-
 def get_frequency_per_type(data):
     import pandas as pd
     type_slice = pd.pivot_table(data[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
@@ -406,25 +345,9 @@ def create_world_time_assesstitle_Dummies(data):
     del Assessments['title']
     Assessments = Assessments.reset_index()
     Assessments = Assessments.drop_duplicates()
+    Assessments = Assessments[
+        Assessments.hour == Assessments.groupby(['installation_id', 'game_session'])['hour'].transform('min')]
     return Assessments
-
-
-def get_vists_per_title(data):
-    import pandas as pd
-    title_slice5 = pd.pivot_table(data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order']],
-                                  index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
-                                  columns='title',
-                                  aggfunc=len,
-                                  fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
-    titlecols = data.title.unique()
-    title_slice5[["visits_" + title for title in titlecols]] = \
-        title_slice5.groupby('installation_id')[titlecols].transform(np.nancumsum)
-    title_slice5_assessments = title_slice5[title_slice5.type == 'Assessment']
-
-    cols = ["visits_" + title for title in titlecols]
-    cols.extend(['installation_id', 'game_session'])
-    titles_played = title_slice5_assessments[cols]
-    return titles_played
 
 
 def create_features(data):
@@ -492,9 +415,7 @@ def create_features(data):
     slice8['Past_Assessments_Played'] = round(
         slice8[slice8.type == 'Assessment'].groupby('installation_id')['Assessments_played_Counter'].shift(1,
                                                                                                            fill_value=0))
-
     slice8['Game_Session_Order'] = slice8.groupby('installation_id')['game_session'].cumcount() + 1
-
     # Slice 1 / Type frequency Experience Measures
     Number_of_games_played_per_type = get_frequency_per_type(slice1)
     print('Number_of_games_played_per_type')
@@ -520,6 +441,7 @@ def create_features(data):
             time_spent_on_diffrent_worlds,
             Level_reached,
             previous_accuracy_metrics]
+
     FinalData = reduce(lambda left, right: pd.merge(left, right, how='inner', on=['installation_id', 'game_session']),
                        Sets)
     return FinalData
@@ -559,11 +481,13 @@ Y_train = FinalTrain['accuracy_group'].astype(int)
 
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 
-model= RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
+model = xgb.XGBClassifier()
+
 model.fit(X_train, Y_train)
+
 Y_pred_test = model.predict(X_test)
 
-
+af.quadratic_weighted_kappa(Y_test, Y_pred_test)
 submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
                            "accuracy_group": Y_pred_test})
 submission.to_csv("submission.csv", index=False)

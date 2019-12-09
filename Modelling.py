@@ -78,6 +78,10 @@ classifiers.append(model17)
 model19 = ExtraTreesClassifier()
 classifiers.append(model19)
 #
+
+
+model10 = EnsembleVoteClassifier(clfs=[model2,  model4, model7, model9], weights=[1, 1], refit=False)
+classifiers.append(model10)
 #
 
 X_train_sub = X_train
