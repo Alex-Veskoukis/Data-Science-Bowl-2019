@@ -459,6 +459,7 @@ def create_features(data):
         'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
     data['Cumulative_Attempts'] = Inst_Group['Attempt'].transform(np.cumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
+    data['Cumulative_Fails'] = data['Cumulative_Attempts'] - data['Cumulative_Successes']
 
     data['Assessment_Session_Time'] = data[data.type == 'Assessment'].groupby(['installation_id', 'game_session'])[
         'game_time'].transform(np.max)

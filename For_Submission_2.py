@@ -427,6 +427,74 @@ def get_vists_per_title(data):
     return titles_played
 
 
+
+def get_cummulative_time_spent_in_titles(data):
+    import pandas as pd
+    titlecols = data.title.unique()
+    title_slice6 = pd.pivot_table(
+        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Total_Game_Session_Time']],
+        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
+        columns='title',
+        values='Total_Game_Session_Time',
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+    cols = ["cumulative_timespent_" + title for title in titlecols]
+    title_slice6[cols] = title_slice6.groupby('installation_id')[titlecols].transform(np.cumsum)
+    title_slice6[cols] = title_slice6[cols].shift(1, fill_value=0)
+    cols.extend(['installation_id', 'game_session'])
+    title_slice6_assessments = title_slice6.loc[title_slice6.type == 'Assessment', cols]
+    return title_slice6_assessments
+
+
+def get_cummulative_events_seen_per_title(data):
+    import pandas as pd
+    titlecols = data.title.unique()
+    title_slice7 = pd.pivot_table(
+        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Total_Game_Session_Events']],
+        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
+        columns='title',
+        values='Total_Game_Session_Events',
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+    cols = ["cumulative_events_" + title for title in titlecols]
+    title_slice7[cols] = title_slice7.groupby('installation_id')[titlecols].transform(np.cumsum)
+    title_slice7[cols] = title_slice7[cols].shift(1, fill_value=0)
+    cols.extend(['installation_id', 'game_session'])
+    title_slice7_assessments = title_slice7.loc[title_slice7.type == 'Assessment', cols]
+    return title_slice7_assessments
+
+
+def get_cummulative_attempts_per_title(data):
+    import pandas as pd
+    titlecols = data.title.unique()
+    title_slice8 = pd.pivot_table(
+        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Past_Total_Attempts']],
+        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
+        columns='title',
+        values='Past_Total_Attempts',
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+    cols = ["cumulative_attempts_" + title for title in titlecols]
+    title_slice8[cols] = title_slice8[titlecols]
+    cols.extend(['installation_id', 'game_session'])
+    title_slice8_assessments = title_slice8.loc[title_slice8.type == 'Assessment', cols]
+    return title_slice8_assessments
+
+
+def get_cummulative_successes_per_title(data):
+    import pandas as pd
+    titlecols = data.title.unique()
+    title_slice9 = pd.pivot_table(
+        data[['installation_id', 'game_session', 'type', 'title', 'Game_Session_Order', 'Past_Total_Successes']],
+        index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
+        columns='title',
+        values='Past_Total_Successes',
+        fill_value=0).reset_index().sort_values(['installation_id', 'Game_Session_Order'])
+    cols = ["cumulative_successes_" + title for title in titlecols]
+    title_slice9[cols] = title_slice9[titlecols]
+    cols.extend(['installation_id', 'game_session'])
+    title_slice9_assessments = title_slice9.loc[title_slice9.type == 'Assessment', cols]
+    return title_slice9_assessments
+
+
+
 def create_features(data):
     trainTitles = data['title'].unique()
     trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
@@ -474,6 +542,15 @@ def create_features(data):
     # Event_and_Attempts
     pre_time_till_attempt_metrics = get_prev_events_and_time_till_attempt(data)
     print('pre_time_till_attempt_metrics')
+
+    title_visits = get_vists_per_title(slice1)
+    print('title_visits')
+    cummulative_time_spent_in_titles = get_cummulative_time_spent_in_titles(slice1)
+    print('cummulative_time_spent_in_titles')
+    # Slice 1 / events count
+    cummulative_events_seen_per_title = get_cummulative_events_seen_per_title(slice1)
+    print('cummulative_events_seen_per_title')
+
     slice8 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
                       (data.event_count == data.Total_Game_Session_Events),
                       ['installation_id', 'game_session', 'type',
@@ -495,22 +572,20 @@ def create_features(data):
 
     slice8['Game_Session_Order'] = slice8.groupby('installation_id')['game_session'].cumcount() + 1
 
-    # Slice 1 / Type frequency Experience Measures
+    cummulative_attempts_per_title = get_cummulative_attempts_per_title(slice8)
+    print('cummulative_attempts_per_title')
+    cummulative_successes_per_title = get_cummulative_successes_per_title(slice8)
+    print('cummulative_successes_per_title')
     Number_of_games_played_per_type = get_frequency_per_type(slice1)
     print('Number_of_games_played_per_type')
-    # Slice 1 / Type time spent Experience Measures
     Time_spent_on_games_metrics = get_cumulative_time_spent_on_types(slice1)
     print('Time_spent_on_games_metrics')
-    # Slice 1 / world time spent Experience Measures
     time_spent_on_diffrent_worlds = get_time_spent_on_diffrent_worlds(slice1)
     print('time_spent_on_diffrent_worlds')
-    # Substract Level of Player
     Level_reached = substract_level(slice1)
     print('Level_reached')
-    # Create Dummies
     world_time_gametitles_dummies = create_world_time_assesstitle_Dummies(data)
     print('world_time_gametitles_dummies')
-    # Get all together
     Sets = [Number_of_games_played_per_type,
             Time_spent_on_games_metrics,
             world_time_gametitles_dummies,
@@ -519,7 +594,12 @@ def create_features(data):
             pre_time_till_attempt_metrics,
             time_spent_on_diffrent_worlds,
             Level_reached,
-            previous_accuracy_metrics]
+            previous_accuracy_metrics,
+            title_visits,
+            cummulative_time_spent_in_titles,
+            cummulative_events_seen_per_title,
+            cummulative_attempts_per_title,
+            cummulative_successes_per_title]
     FinalData = reduce(lambda left, right: pd.merge(left, right, how='inner', on=['installation_id', 'game_session']),
                        Sets)
     return FinalData

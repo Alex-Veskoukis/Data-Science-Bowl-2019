@@ -214,11 +214,12 @@ class VotingClassifier(object):
 
 
 def get_previous_ac_metrics(data):
-    Assess = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True]).copy()
+    import  pandas as pd
+    Assess = data.sort_values(['installation_id', 'timestamp', 'game_session','Assessments_played_Counter'], ascending=[True, True, True, True]).copy()
     Assess = Assess[Assess.type == 'Assessment']
     Assess['Attempts'] = Assess.groupby(['installation_id', 'game_session'])['Attempt'].transform(np.sum)
     Assess['Success'] = Assess.groupby(['installation_id', 'game_session'])['IsAttemptSuccessful'].transform(np.sum)
-    Assess = Assess[['installation_id', 'game_session', 'Attempts', 'Success']].drop_duplicates()
+    Assess = Assess[['installation_id', 'game_session', 'Assessments_played_Counter' ,'Attempts', 'Success']].drop_duplicates()
     ratio = Assess['Success'] / Assess['Attempts']
     conditions = [
         (ratio == 1),
@@ -249,6 +250,17 @@ def get_previous_ac_metrics(data):
     Assess['cumstd_att'].fillna(0, inplace=True)
     Assess['cumstd_succ'].fillna(0, inplace=True)
 
+    pastAG = Assess[['installation_id', 'game_session', 'Assessments_played_Counter', 'Past_Assessment_ag']]
+    Assess2 = pd.pivot_table(pastAG,
+                             index=['installation_id', 'game_session','Assessments_played_Counter'],
+                             columns='Past_Assessment_ag',
+                             values= 'Past_Assessment_ag',
+                             aggfunc='nunique').reset_index()
+    Assess2 = Assess2.rename(columns={0: "zeros", 1: "ones", 2: "twos", 3:'threes'})
+    Assess2 = Assess2.sort_values(['installation_id','Assessments_played_Counter'])
+    Assess2.loc[:,[ "zeros", 'ones',"twos" , 'threes']] = Assess2.groupby('installation_id')[ "zeros", 'ones',"twos" , 'threes'].apply(np.cumsum)
+    Assess2.loc[:, ["zeros", 'ones', "twos", 'threes']] = Assess2.groupby('installation_id')[ "zeros", 'ones',"twos" , 'threes'].fillna(method='ffill')
+    Assess2.loc[:, ["zeros", 'ones', "twos", 'threes']] = Assess2.loc[:, ["zeros", 'ones', "twos", 'threes']].fillna(0)
     Assess = Assess[
         ['installation_id', 'game_session',
          'Past_Assessment_ag',
@@ -260,27 +272,30 @@ def get_previous_ac_metrics(data):
          'cumstd_ag',
          'cumstd_att',
          'cumstd_succ']]
-    return Assess
+    AssessFinal = pd.merge(Assess,Assess2, on = ['installation_id', 'game_session'], how= 'inner')
+    return AssessFinal
 
 
 def get_past_attemps_and_successes(data):
     slice2 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
                       (data.event_count == data.Total_Game_Session_Events),
                       ['installation_id', 'game_session', 'type',
-                       'Cumulative_Attempts', 'Cumulative_Successes',
+                       'Cumulative_Attempts', 'Cumulative_Successes','Cumulative_Fails',
                        'Assessments_played_Counter']].copy().drop_duplicates()
     slice2['Game_Session_Order'] = slice2.groupby('installation_id')['game_session'].cumcount() + 1
     slice2 = slice2.sort_values(['installation_id', 'Game_Session_Order'])
     slice2 = slice2[slice2.type == 'Assessment']
     slice2['Past_Total_Attempts'] = round(
-        slice2.groupby('installation_id')['Cumulative_Attempts'].shift(1, fill_value=0))
+        slice2.groupby('installation_id')['Cumulative_Attempts'].shift(1, fill_value=0)).astype('int')
     slice2['Past_Total_Successes'] = round(
-        slice2.groupby('installation_id')['Cumulative_Successes'].shift(1, fill_value=0))
+        slice2.groupby('installation_id')['Cumulative_Successes'].shift(1, fill_value=0)).astype('int')
+    slice2['Past_Total_Fails'] = round(
+        slice2.groupby('installation_id')['Cumulative_Fails'].shift(1, fill_value=0)).astype('int')
     slice2['Past_Assessments_Played'] = round(
-        slice2.groupby('installation_id')['Assessments_played_Counter'].shift(1, fill_value=0))
+        slice2.groupby('installation_id')['Assessments_played_Counter'].shift(1, fill_value=0)).astype('int')
     slice2 = slice2.loc[:, ['installation_id', 'game_session',
                             'Game_Session_Order', 'Past_Total_Attempts',
-                            'Past_Total_Successes', 'Past_Assessments_Played']]
+                            'Past_Total_Successes', 'Past_Total_Fails','Past_Assessments_Played']]
     return slice2
 
 
