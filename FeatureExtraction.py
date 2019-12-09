@@ -592,10 +592,10 @@ def get_last_assessment2(data):
     Assess['LastGame'] = Assess.groupby('installation_id')['order'].transform('max')
     Assess.loc[Assess.order == Assess.LastGame - 1, "To_Predict"] = 1
     Assess = Assess.drop('accuracy', axis=1)
-    Assess.loc[Assess.order == Assess.LastGame, "To_Predict"] = 1
     Assess = Assess.drop_duplicates()
     Assess = Assess.loc[Assess.To_Predict == 1, :]
     return Assess
+
 
 Test_Set = get_last_assessment2(test)
 
@@ -607,14 +607,13 @@ Test_set_full = pd.merge(Test_Features, Test_Set, on=['installation_id', 'game_s
 
 
 
-
 X_train = FinalTrain.loc[:, ~FinalTrain.columns.isin(['accuracy_group', 'installation_id', 'game_session'])]
 Y_train = FinalTrain['accuracy_group'].astype(int)
 
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 
 
-model= RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
+model= RandomForestClassifier(n_estimators=8, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
 Y_pred_train = model.predict(X_train)
 cohen_kappa_score(Y_train, Y_pred_train)
