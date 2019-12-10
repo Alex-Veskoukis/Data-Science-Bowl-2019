@@ -534,14 +534,14 @@ Test_Features = create_features(test)
 # For testing
 Test_Set = get_all_but_last_assessment(test)
 Test_Set_ids = Test_Set.loc[:, ['installation_id', 'game_session']]
-Test_set_full = pd.merge(Test_Features, Test_Set, on=['installation_id', 'game_session'], how='right')
+Test_set_full = pd.merge(Test_Features, Test_Set[['installation_id', 'game_session']], on=['installation_id', 'game_session'], how='right')
 
 X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 Y_test = Test_Set['accuracy_group'].astype(int)
 
 
 ################################################# Modelling ############################################################
-model= RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42)
+model = RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
 
 Y_pred_test = model.predict(X_test)
