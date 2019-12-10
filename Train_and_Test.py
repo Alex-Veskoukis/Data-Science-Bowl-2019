@@ -507,7 +507,7 @@ def create_features(data):
                        Sets)
     return FinalData
 
-
+################################################# Create train #########################################################
 Final = create_features(train)
 
 FinalTrain = pd.merge(Final,
@@ -523,11 +523,7 @@ Y_train = FinalTrain['accuracy_group'].astype(int)
 
 
 
-
-
-
-
-
+################################################# Create test ##########################################################
 Test_Features = create_features(test)
 
 # For submission
@@ -544,8 +540,7 @@ X_test = Test_set_full.set_index(['installation_id', 'game_session'])
 Y_test = Test_Set['accuracy_group'].astype(int)
 
 
-
-# Modelling
+################################################# Modelling ############################################################
 model= RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
 
