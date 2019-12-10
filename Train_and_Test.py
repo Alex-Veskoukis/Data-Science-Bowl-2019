@@ -7,13 +7,14 @@ import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 from functools import reduce
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import  cohen_kappa_score
 # Input data files are available in the "../input/" directory.
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
 
 
-train = pd.read_csv('/kaggle/input/data-science-bowl-2019/train.csv')
-test = pd.read_csv('/kaggle/input/data-science-bowl-2019/test.csv')
-train_labels = pd.read_csv('/kaggle/input/data-science-bowl-2019/train_labels.csv')
+# train = pd.read_csv('/kaggle/input/data-science-bowl-2019/train.csv')
+# test = pd.read_csv('/kaggle/input/data-science-bowl-2019/test.csv')
+# train_labels = pd.read_csv('/kaggle/input/data-science-bowl-2019/train_labels.csv')
 
 
 train = pd.read_csv('Data/train.csv')
@@ -541,13 +542,41 @@ Y_test = Test_Set['accuracy_group'].astype(int)
 
 
 ################################################# Modelling ############################################################
-model = RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42)
-model.fit(X_train, Y_train)
+from sklearn.metrics import accuracy_score
+cols = X_train.columns
+cols = ['Total_Games_played', 'Clips__played', 'Games_played',
+       'Assessments_played', 'Activities_played', 'Total_Time_spent',
+       'Time_spent_on_Activities', 'Time_spent_on_Games',
+       'Time_spent_on_Assessments', 'zeros', 'ones', 'twos', 'threes',
+        'Game_Session_Order', 'Past_Total_Attempts',
+        'Past_Total_Successes', 'Past_Total_Fails', 'Past_Assessments_Played',
+        'Past_Assessment_Session_Time', 'Past_Assessment_NumberOfEvents',
+        'CRYSTALCAVES', 'MAGMAPEAK', 'TREETOPCITY',
+        'Bird Measurer', 'Cart Balancer', 'Cauldron Filler', 'Chest Sorter','Mushroom Sorter',
+'cummean_ag',
+        'cumAverageTime', 'cumAverageEvents', 'cumsdTime', 'cumsdEvents'
+        ]
 
-Y_pred_test = model.predict(X_test)
 
+import itertools
+
+
+ColumnList = []
+for L in range(0, len(cols)+1):
+    for subset in itertools.combinations(cols, L):
+        print(subset)
+        ColumnList.append(subset)
+
+
+model = RandomForestClassifier(n_estimators= 8, n_jobs=-1, random_state=42)
+model.fit(X_train[cols], Y_train)
+
+Y_pred_test = model.predict(X_test[cols])
+accuracy_score(Y_test, Y_pred_test)
+quadratic_weighted_kappa(Y_test, Y_pred_test)
 
 submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
                            "accuracy_group": Y_pred_test})
+submission.accuracy_group.value_counts()
 
 submission.to_csv("submission.csv", index=False)
