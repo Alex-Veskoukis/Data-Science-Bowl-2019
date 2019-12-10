@@ -517,8 +517,8 @@ FinalTrain = pd.merge(Final,
 
 FinalTrain = FinalTrain.set_index(['installation_id', 'game_session'])
 
-X_test = FinalTrain.drop('accuracy_group', axis = 1)
-Y_test = FinalTrain['accuracy_group'].astype(int)
+X_train = FinalTrain.drop('accuracy_group', axis = 1)
+Y_train = FinalTrain['accuracy_group'].astype(int)
 
 
 
@@ -548,6 +548,7 @@ Y_test = Test_Set['accuracy_group'].astype(int)
 # Modelling
 model= RandomForestClassifier(n_estimators=50, n_jobs=-1, random_state=42)
 model.fit(X_train, Y_train)
+
 Y_pred_test = model.predict(X_test)
 
 
