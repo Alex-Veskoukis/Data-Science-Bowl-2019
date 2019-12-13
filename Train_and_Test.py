@@ -413,6 +413,21 @@ def get_all_but_last_assessment(data):
     return Assess[['installation_id', 'game_session', 'accuracy_group']]
 
 
+
+def get_event_code_history(data):
+    his = data[['installation_id', 'timestamp','game_session','type', 'event_code']].copy()
+    his = his.sort_values(['installation_id', 'timestamp'])
+    his['order'] = his.groupby('installation_id')['game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
+
+
+    Events = pd.pivot_table(his,
+        index=['installation_id', 'game_session', 'order','type'],
+        columns='event_code',
+        values='event_code',
+        aggfunc='nunique',
+        fill_value=0).reset_index().sort_values(['installation_id', 'order'])
+    return event_code_history
+
 def create_features(data):
     trainTitles = data['title'].unique()
     trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
@@ -544,11 +559,25 @@ Y_test = Test_Set['accuracy_group'].astype(int)
 
 
 model= RandomForestClassifier(n_estimators=10000, n_jobs=-1, random_state=42)
+
+model = GradientBoostingClassifier(n_estimators=20, learning_rate=learning_rate, max_features=2, max_depth=2, random_state=0)
 model.fit(X_train, Y_train)
 Y_pred_test = model.predict(X_test)
 
 
-submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
-                           "accuracy_group": Y_pred_test})
 
-submission.to_csv("submission.csv", index=False)
+####
+state = 12
+test_size = 0.30
+
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
+                                                  test_size=test_size, random_state=state)
+
+
+
+
+
+# submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
+#                            "accuracy_group": Y_pred_test})
+#
+# submission.to_csv("submission.csv", index=False)
