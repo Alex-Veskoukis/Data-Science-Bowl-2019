@@ -14,7 +14,8 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import ExtraTreesClassifier
 
-import xgboost as xgb
+from xgboost import XGBClassifier
+import
 from sklearn.metrics import confusion_matrix, accuracy_score, cohen_kappa_score
 import seaborn as sns
 

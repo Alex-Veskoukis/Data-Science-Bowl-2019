@@ -13,6 +13,9 @@ from sklearn.preprocessing import MinMaxScaler
 train = pd.read_csv('Data/train.csv')
 test = pd.read_csv('Data/test.csv')
 train_labels = pd.read_csv('Data/train_labels.csv')
+
+train_ids = train[['installation_id', 'game_session']].drop_duplicates()
+test_ids = test[['installation_id', 'game_session']].drop_duplicates()
 # train = pd.read_csv('/kaggle/input/data-science-bowl-2019/train.csv')
 # test = pd.read_csv('/kaggle/input/data-science-bowl-2019/test.csv')
 # train_labels = pd.read_csv('/kaggle/input/data-science-bowl-2019/train_labels.csv')
@@ -110,8 +113,7 @@ def get_past_attemps_and_successes(data):
         slice2.groupby('installation_id')['Cumulative_Fails'].shift(1, fill_value=0)).astype('int')
     slice2['Past_Assessments_Played'] = round(
         slice2.groupby('installation_id')['Assessments_played_Counter'].shift(1, fill_value=0)).astype('int')
-    slice2 = slice2.loc[:, ['installation_id', 'game_session',
-                            'Game_Session_Order', 'Past_Total_Attempts',
+    slice2 = slice2.loc[:, ['installation_id', 'game_session', 'Past_Total_Attempts',
                             'Past_Total_Successes', 'Past_Total_Fails','Past_Assessments_Played']]
     return slice2
 
@@ -201,7 +203,13 @@ def get_prev_events_and_time_till_attempt(data):
 
 def get_frequency_per_type(data):
     import pandas as pd
-    type_slice = pd.pivot_table(data[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
+    slice1 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
+                      (data.event_count == data.Total_Game_Session_Events),
+                      ['installation_id', 'game_session', 'type', 'title', 'world', 'Total_Game_Session_Time',
+                       'Total_Game_Session_Events']].drop_duplicates().copy()
+    slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
+    slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
+    type_slice = pd.pivot_table(slice1[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
                                 index=['installation_id', 'game_session','type', 'Game_Session_Order'],
                                 columns='type',
                                 aggfunc=len,
@@ -221,8 +229,14 @@ def get_frequency_per_type(data):
 
 def get_cumulative_time_spent_on_types(data):
     import pandas as pd
+    slice1 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
+                      (data.event_count == data.Total_Game_Session_Events),
+                      ['installation_id', 'game_session', 'type', 'title', 'world', 'Total_Game_Session_Time',
+                       'Total_Game_Session_Events']].drop_duplicates().copy()
+    slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
+    slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
     type_slice2 = pd.pivot_table(
-        data[['installation_id', 'game_session', 'type', 'Game_Session_Order', 'Total_Game_Session_Time']],
+        slice1[['installation_id', 'game_session', 'type', 'Game_Session_Order', 'Total_Game_Session_Time']],
         index=['installation_id', 'game_session', 'Game_Session_Order','type'],
         columns='type',
         values='Total_Game_Session_Time',
@@ -288,8 +302,14 @@ def get_cumulative_time_spent_on_types(data):
 
 def get_time_spent_on_diffrent_worlds(data):
     import pandas as pd
+    slice1 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
+                      (data.event_count == data.Total_Game_Session_Events),
+                      ['installation_id', 'game_session', 'type', 'title', 'world', 'Total_Game_Session_Time',
+                       'Total_Game_Session_Events']].drop_duplicates().copy()
+    slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
+    slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
     world_slice3 =  pd.pivot_table(
-        data[['installation_id', 'game_session', 'world', 'Game_Session_Order', 'type', 'Total_Game_Session_Time']],
+        slice1[['installation_id', 'game_session', 'world', 'Game_Session_Order', 'type', 'Total_Game_Session_Time']],
         index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
         columns='world',
         values='Total_Game_Session_Time',
@@ -309,7 +329,13 @@ def get_time_spent_on_diffrent_worlds(data):
 
 def substract_level(data):
     import pandas as pd
-    Level_slice4 = data.copy()
+    slice1 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
+                      (data.event_count == data.Total_Game_Session_Events),
+                      ['installation_id', 'game_session', 'type', 'title', 'world', 'Total_Game_Session_Time',
+                       'Total_Game_Session_Events']].drop_duplicates().copy()
+    slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
+    slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
+    Level_slice4 = slice1.copy()
     Level_slice4['Level'] = np.where(Level_slice4['title'].str.contains("Level"),
         Level_slice4['title'].str.strip().str[-1], 0)
     Level_slice4['Level'] = pd.to_numeric(Level_slice4['Level'])
@@ -418,17 +444,60 @@ def get_event_code_history(data):
     his = data[['installation_id', 'timestamp','game_session','type', 'event_code']].copy()
     his = his.sort_values(['installation_id', 'timestamp'])
     his['order'] = his.groupby('installation_id')['game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
-
-
     Events = pd.pivot_table(his,
         index=['installation_id', 'game_session', 'order','type'],
         columns='event_code',
         values='event_code',
         aggfunc='nunique',
         fill_value=0).reset_index().sort_values(['installation_id', 'order'])
+
+    eventList = Events.columns[~Events.columns.isin(['installation_id', 'game_session', 'order','type'])]
+    Events.loc[:,eventList] =  Events.groupby('installation_id')[eventList].cumsum()
+    Events = Events[Events.type == 'Assessment']
+    event_code_history = Events.drop(['order','type'], axis=1)
     return event_code_history
 
+def get_success_rate_by_world:
+    import pandas as pd
+    df = data[data.type == 'Assessment'].copy()
+    df['Success_Rate'] = df.groupby(['installation_id', 'game_session', 'world'])['Attempt', 'IsAttemptSuccessful'].\
+        apply(lambda x,y: sum(y)/sum(x))
+    return bla
+
+def calculate_accuracy_group(data):
+        dt = data.copy()
+        dt['Attempts'] = dt.groupby(['installation_id', 'game_session'])['Attempt'].transform(np.sum)
+        dt['Success'] = dt.groupby(['installation_id', 'game_session'])['IsAttemptSuccessful'].transform(np.sum)
+        dt = dt.set_index(['installation_id', 'game_session'])
+        dt = dt[['Attempts', 'Success', 'timestamp']]
+        ratio = dt['Success'] / dt['Attempts']
+        conditions = [
+            (ratio == 1),
+            (ratio == 0.5),
+            (ratio < 0.5) & (ratio > 0),
+            (ratio == 0)]
+        choices = [3, 2, 1, 0]
+        dt['accuracy_group'] = np.select(conditions, choices)
+        dt = dt.reset_index()
+        dt = dt[['installation_id', 'game_session','accuracy_group']].drop_duplicates()
+        return dt
+
+
+
 def create_features(data):
+
+    data['timestamp'] = pd.to_datetime(data['timestamp'], format="%Y-%m-%d %H:%M")
+    data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
+    Inst_Group = data.groupby('installation_id')
+    Inst_Game_Group = data.groupby(['installation_id', 'game_session'])
+    # initial measures
+
+
+    data['Total_Game_Session_Time'] = Inst_Game_Group['game_time'].transform(np.max)
+    data['Total_Game_Session_Events'] = Inst_Game_Group['event_count'].transform(np.max)
+    data['Assessments_played_Counter'] = data[data.type == 'Assessment'].groupby('installation_id')[
+        'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
+
     trainTitles = data['title'].unique()
     trainTitles_sub = [item for item in trainTitles if item not in ['Bird Measurer (Assessment)']]
     AttemptIndicator = (data.type == 'Assessment') & \
@@ -440,15 +509,8 @@ def create_features(data):
     data['IsAttemptSuccessful'] = 0
     data.loc[SuccessfulAttemptIndicator, 'IsAttemptSuccessful'] = 1
 
-    data['timestamp'] = pd.to_datetime(data['timestamp'], format="%Y-%m-%d %H:%M")
-    data = data.sort_values(['installation_id', 'timestamp', 'game_session'], ascending=[True, True, True])
-    Inst_Group = data.groupby('installation_id')
-    Inst_Game_Group = data.groupby(['installation_id', 'game_session'])
-    # initial measures
-    data['Total_Game_Session_Time'] = Inst_Game_Group['game_time'].transform(np.max)
-    data['Total_Game_Session_Events'] = Inst_Game_Group['event_count'].transform(np.max)
-    data['Assessments_played_Counter'] = data[data.type == 'Assessment'].groupby('installation_id')[
-        'game_session'].transform(lambda x: np.round(pd.factorize(x)[0] + 1))
+    ag = calculate_accuracy_group(data)
+
     data['Cumulative_Attempts'] = Inst_Group['Attempt'].transform(np.cumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
     data['Cumulative_Successes'] = Inst_Group['IsAttemptSuccessful'].transform(np.nancumsum)
@@ -460,13 +522,6 @@ def create_features(data):
     # Previous Accuracy
     previous_accuracy_metrics = get_previous_ac_metrics(data)
     print('previous_accuracy_metrics')
-    # Slice 1
-    slice1 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
-                             (data.event_count == data.Total_Game_Session_Events),
-                             ['installation_id', 'game_session', 'type', 'title', 'world', 'Total_Game_Session_Time',
-                              'Total_Game_Session_Events']].drop_duplicates().copy()
-    slice1['Game_Session_Order'] = slice1.groupby('installation_id')['game_session'].cumcount() + 1
-    slice1['Cumulative_Time_Spent'] = slice1.groupby(['installation_id'])['Total_Game_Session_Time'].cumsum()
     # Slice 2
     Number_of_attemps_and_successes = get_past_attemps_and_successes(data)
     print('Number_of_attemps_and_successes')
@@ -476,36 +531,17 @@ def create_features(data):
     # Event_and_Attempts
     pre_time_till_attempt_metrics = get_prev_events_and_time_till_attempt(data)
     print('pre_time_till_attempt_metrics')
-    slice8 = data.loc[(data.game_time == data.Total_Game_Session_Time) &
-                      (data.event_count == data.Total_Game_Session_Events),
-                      ['installation_id', 'game_session', 'type',
-                       'title',
-                       'Assessments_played_Counter',
-                       'Cumulative_Attempts',
-                       'Cumulative_Successes'
-                       ]].copy().drop_duplicates()
-
-    slice8['Game_Session_Order'] = slice8.groupby('installation_id')['game_session'].cumcount() + 1
-    slice8 = slice8.sort_values(['installation_id', 'Game_Session_Order'])
-    slice8['Past_Total_Attempts'] = round(
-        slice8.groupby('installation_id')['Cumulative_Attempts'].shift(1, fill_value=0))
-    slice8['Past_Total_Successes'] = round(
-        slice8.groupby('installation_id')['Cumulative_Successes'].shift(1, fill_value=0))
-    slice8['Past_Assessments_Played'] = round(
-        slice8[slice8.type == 'Assessment'].groupby('installation_id')['Assessments_played_Counter'].shift(1,
-                                                                                                           fill_value=0))
-
-    slice8['Game_Session_Order'] = slice8.groupby('installation_id')['game_session'].cumcount() + 1
-    Number_of_games_played_per_type = get_frequency_per_type(slice1)
+    Number_of_games_played_per_type = get_frequency_per_type(data)
     print('Number_of_games_played_per_type')
-    Time_spent_on_games_metrics = get_cumulative_time_spent_on_types(slice1)
+    Time_spent_on_games_metrics = get_cumulative_time_spent_on_types(data)
     print('Time_spent_on_games_metrics')
-    time_spent_on_diffrent_worlds = get_time_spent_on_diffrent_worlds(slice1)
+    time_spent_on_diffrent_worlds = get_time_spent_on_diffrent_worlds(data)
     print('time_spent_on_diffrent_worlds')
-    Level_reached = substract_level(slice1)
+    Level_reached = substract_level(data)
     print('Level_reached')
     world_time_gametitles_dummies = create_world_time_assesstitle_Dummies(data)
     print('world_time_gametitles_dummies')
+    even_codes_history = get_event_code_history(data)
     Sets = [Number_of_games_played_per_type,
             Time_spent_on_games_metrics,
             world_time_gametitles_dummies,
@@ -514,7 +550,9 @@ def create_features(data):
             pre_time_till_attempt_metrics,
             time_spent_on_diffrent_worlds,
             Level_reached,
-            previous_accuracy_metrics]
+            previous_accuracy_metrics,
+            even_codes_history,
+            ag]
     FinalData = reduce(lambda left, right: pd.merge(left, right, how='inner', on=['installation_id', 'game_session']),
                        Sets)
     return FinalData
@@ -522,59 +560,69 @@ def create_features(data):
 
 
 ################################################# Create train #########################################################
-Final = create_features(train)
+wholedata = pd.concat([train,test],ignore_index=True)
+Final = create_features(wholedata)
+cols_to_keep = [
+    'installation_id',
+    'game_session',
+    'Total_Games_played',
+    'Clips__played',
+    'Games_played',
+    'Assessments_played',
+    'Activities_played',
+    'Total_Time_spent',
+    'Time_spent_on_Activities',
+    'Time_spent_on_Games',
+    'Time_spent_on_Assessments',
+    'Average_Time_spent_on_Activities',
+    'Average_Time_spent_on_Games',
+    'Average_Time_spent_on_Assessments',
+    'Average_Time_spent_on_games',
+    'Past_Total_Attempts',
+    'Past_Total_Attempts',
+    'Past_Total_Successes',
+    'Past_Total_Fails',
+    'Past_Assessment_Session_Time',
+    'Past_Assessment_NumberOfEvents',
+    'Level_reached_in_CRYSTALCAVES',
+    'Level_reached_in_MAGMAPEAK',
+    'Level_reached_in_TREETOPCITY',
+    'Total_Level',
+    'Past_Assessment_ag',
+    'Past_Assessment_att',
+    'Past_Assessment_succ',
+    'zeros',
+    'ones',
+    'twos',
+    'threes',
+    'CRYSTALCAVES',
+    'MAGMAPEAK',
+    'TREETOPCITY',
+    'Bird Measurer',
+    'Cart Balancer',
+    'Cauldron Filler',
+    'Chest Sorter',
+    'Mushroom Sorter',
+    'cummean_ag',
+    'accuracy_group']
 
-FinalTrain = pd.merge(Final,
-                      train_labels[['installation_id', 'game_session', 'accuracy_group']],
-                      how='inner',
-                      on=['installation_id', 'game_session'])
-
-FinalTrain = FinalTrain.set_index(['installation_id', 'game_session'])
-
-X_train = np.asarray(FinalTrain.drop('accuracy_group', axis = 1))
-
-Y_train = np.asarray(FinalTrain['accuracy_group']).astype(int)
+Final = Final[cols_to_keep]
 
 
+Train = pd.merge(train_ids , Final, on = ['installation_id', 'game_session'], how = 'inner')
+Test = pd.merge(test_ids , Final, on = ['installation_id', 'game_session'], how = 'inner')
+
+X_train= Train.drop('accuracy_group', axis = 1).set_index(['installation_id', 'game_session'])
+Y_train= np.asarray(Train['accuracy_group'])
 
 
-################################################# Create test ##########################################################
-Test_Features = create_features(test)
+X_test= Test.drop('accuracy_group', axis = 1).set_index(['installation_id', 'game_session'])
+To_predict = Test.loc[Test.Assessments_played == Test.groupby('installation_id')['Assessments_played'].transform('max'),['game_session']]
+Y_test= np.asarray(Test.loc[~Test.game_session.isin(To_predict.game_session),'accuracy_group'])
 
-# For submission
-#Test_Set = get_last_assessment(test)
-#Test_set_full = pd.merge(Test_Features, Test_Set, on=['installation_id', 'game_session'], how='right')
-#X_test = Test_set_full.set_index(['installation_id', 'game_session'])
-
-# For testing
-Test_Set = get_all_but_last_assessment(test)
-Test_Set_ids = Test_Set.loc[:, ['installation_id', 'game_session']]
-Test_set_full = pd.merge(Test_Features, Test_Set[['installation_id', 'game_session']], on=['installation_id', 'game_session'], how='right')
-
-X_test = Test_set_full.set_index(['installation_id', 'game_session'])
-Y_test = Test_Set['accuracy_group'].astype(int)
 
 
 ################################################# Modelling  things ####################################################
-
-
-model= RandomForestClassifier(n_estimators=10000, n_jobs=-1, random_state=42)
-
-model = GradientBoostingClassifier(n_estimators=20, learning_rate=learning_rate, max_features=2, max_depth=2, random_state=0)
-model.fit(X_train, Y_train)
-Y_pred_test = model.predict(X_test)
-
-
-
-####
-state = 12
-test_size = 0.30
-
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
-                                                  test_size=test_size, random_state=state)
-
-
-
 
 
 # submission = pd.DataFrame({"installation_id": X_test.reset_index(1).index.values,
