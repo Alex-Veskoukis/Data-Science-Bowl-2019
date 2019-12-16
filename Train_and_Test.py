@@ -384,7 +384,7 @@ def create_world_time_assesstitle_Dummies(data):
     del Assessments['timestamp']
     Assessments['title'] = Assessments['title'].str.rstrip(' (Assessment)')
     Assessments = Assessments.set_index(['installation_id', 'game_session'])
-    Assessments = Assessments[['title', 'world', 'hour',  'month', 'year', 'dayofweek']]
+    Assessments = Assessments[['title', 'world', 'hour',  'dayofweek']]
     Assessments = dummyfy(df=Assessments, colname='title')
     Assessments = dummyfy(df=Assessments, colname='world')
     Assessments = dummyfy(df=Assessments, colname='hour')
