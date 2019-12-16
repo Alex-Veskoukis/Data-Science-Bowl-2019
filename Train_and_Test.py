@@ -567,20 +567,18 @@ def create_features(data):
 Train_dataset = create_features(train)
 Test_dataset = create_features(test)
 
-wholedata = pd.concat([Train_dataset,Test_dataset],ignore_index=True)
-
-Train = pd.merge(train_ids , Final, on = ['installation_id', 'game_session'], how = 'inner')
-Test = pd.merge(test_ids , Final, on = ['installation_id', 'game_session'], how = 'inner')
+Train = pd.merge(train_ids , Train_dataset, on = ['installation_id', 'game_session'], how = 'inner')
+Test = pd.merge(test_ids , Test_dataset, on = ['installation_id', 'game_session'], how = 'inner')
 
 X_train= Train.drop('accuracy_group', axis = 1).set_index(['installation_id', 'game_session'])
 Y_train= np.asarray(Train['accuracy_group'])
 
 
 To_predict = Test.loc[Test.Assessments_played == Test.groupby('installation_id')['Assessments_played'].transform('max'),['game_session']]
-X_test = Test.loc[~Test.game_session.isin(To_predict.game_session),]
+X_test = Test.loc[~Test.game_session.isin(To_predict.game_session),] # remove ~ for submission
 X_test = X_test.drop('accuracy_group', axis = 1).set_index(['installation_id', 'game_session'])
 
-Y_test= np.asarray(Test.loc[~Test.game_session.isin(To_predict.game_session),'accuracy_group'])
+Y_test= np.asarray(Test.loc[~Test.game_session.isin(To_predict.game_session),'accuracy_group'])# remove ~ for submission
 
 
 

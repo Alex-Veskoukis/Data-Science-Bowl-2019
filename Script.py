@@ -14,9 +14,6 @@ import numpy as np
 from sklearn import linear_model
 import statsmodels.api as sm
 
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
 
 train = pd.read_csv('Data/train.csv')
 train_labels = pd.read_csv('Data/train_labels.csv')
