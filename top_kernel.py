@@ -43,7 +43,6 @@ def convert_datetime(df):
 
 
 def get_previous_ac_metrics(data):
-    import pandas as pd
     Assess = data.sort_values(['installation_id', 'timestamp', 'game_session', 'Assessments_played_Counter'],
                               ascending=[True, True, True, True]).copy()
     Assess = Assess[Assess.type == 'Assessment']
@@ -243,7 +242,6 @@ def get_prev_events_and_time_till_attempt(data):
 
 
 def get_frequency_per_type(data):
-    import pandas as pd
     type_slice = pd.pivot_table(data[['installation_id', 'game_session', 'type', 'Game_Session_Order']],
                                 index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
                                 columns='type',
@@ -262,7 +260,6 @@ def get_frequency_per_type(data):
 
 
 def get_cumulative_time_spent_on_types(data):
-    import pandas as pd
     type_slice2 = pd.pivot_table(
         data[['installation_id', 'game_session', 'type', 'Game_Session_Order', 'Total_Game_Session_Time']],
         index=['installation_id', 'game_session', 'Game_Session_Order', 'type'],
@@ -328,7 +325,6 @@ def get_cumulative_time_spent_on_types(data):
 
 
 def get_time_spent_on_diffrent_worlds(data):
-    import pandas as pd
     world_slice3 = pd.pivot_table(
         data[['installation_id', 'game_session', 'world', 'Game_Session_Order', 'type', 'Total_Game_Session_Time']],
         index=['installation_id', 'game_session', 'type', 'Game_Session_Order'],
@@ -380,7 +376,6 @@ def substract_level(data):
 
 
 def create_world_time_assesstitle_Dummies(data):
-    import pandas as pd
     Assessments = data[data.type == 'Assessment'].copy()
     Assessments['timestamp'] = pd.to_datetime(Assessments['timestamp'], format="%Y-%m-%d %H:%M")
     Assessments = Assessments.sort_values('timestamp', ascending=True)
@@ -563,9 +558,7 @@ def create_features(data):
 
 
 Final = create_features(train)
-#Using Pearson Correlation
 
-###
 FinalTrain = pd.merge(Final,
                       train_labels[['installation_id', 'game_session', 'accuracy_group']],
                       how='inner',
@@ -574,7 +567,6 @@ FinalTrain = pd.merge(Final,
 FinalTrain = FinalTrain.set_index(['installation_id', 'game_session'])
 
 cor = FinalTrain.corr()
-
 
 cor_target = abs(cor["accuracy_group"])
 
