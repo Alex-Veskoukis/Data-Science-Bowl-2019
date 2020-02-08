@@ -1,4 +1,4 @@
-# Data-Science-Bowl-2019
+# Kaggle: Data-Science-Bowl-2019
 
 * The file train_labels.csv has been provided to show how these groups would be computed on the assessments in the training set.   
 * Assessment attempts are captured in event_code 4100 for all assessments except for Bird Measurer, which uses event_code 4110.    
