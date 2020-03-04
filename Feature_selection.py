@@ -13,23 +13,6 @@ print("Num Features: %d" % fit.n_features_)
 print("Selected Features: %s" % fit.support_)
 print("Feature Ranking: %s" % fit.ranking_)
 
-
-
-
-
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-
 # feature extraction
 model = RandomForestClassifier(n_estimators= 50, n_jobs=-1, random_state=42)
 model.fit(X, Y)
